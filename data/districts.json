@@ -1,0 +1,585 @@
+{
+  "institute": {
+    "name": "Tuproqshunoslik va agrokimyoviy tadqiqotlar instituti",
+    "branch": "Qashqadaryo bo‘linmasi",
+    "fullName": "Tuproqshunoslik va agrokimyoviy tadqiqotlar instituti Qashqadaryo bo‘linmasi",
+    "address": "Qashqadaryo viloyati, Qarshi shahri, Ravoq MFY, Islom Karimov ko‘chasi, 62-uy",
+    "lat": 38.892663,
+    "lng": 65.810101,
+    "parentSite": "https://soil.uz",
+    "email": "info@soil.uz",
+    "phone": "+998 71 246-09-50",
+    "about": "Qishloq xo‘jaligi vazirligi tizimidagi Tuproqshunoslik va agrokimyoviy tadqiqotlar institutining Qashqadaryo mintaqaviy bo‘linmasi. Viloyatdagi shahar va tumanlardan olingan tuproq namunalarini tahlil qiladi, agrokimyoviy kartogrammalar va amaliy tavsiyalar tayyorlaydi. Manzil: Qarshi shahri, Ravoq MFY, Islom Karimov ko‘chasi, 62-uy (VMQ-389, 19.07.2022)."
+  },
+  "staff": {
+    "director": {
+      "name": "Bo‘linma direktori",
+      "role": "Direktor",
+      "note": "Admin panel orqali o‘zgartiriladi"
+    },
+    "workers": []
+  },
+  "districts": [
+    {
+      "id": "qarshi-shahar",
+      "name": "Qarshi shahri",
+      "type": "shahar",
+      "sampleId": "QSH-2025-01",
+      "date": "2025-03-12",
+      "depth": "0–30 sm",
+      "description": "Och jigarrang qumloq tuproq, o‘rtacha sho‘rlanish",
+      "uscs": "CL",
+      "mc": 14.2,
+      "ll": 32,
+      "pl": 18,
+      "pi": 14,
+      "fines": 58,
+      "npk": { "n": 42, "p": 28, "k": 165 },
+      "ph": 7.4,
+      "organic": 1.1,
+      "texture": { "sand": 42, "silt": 35, "clay": 23 },
+      "proctor": {
+        "moisture": [8, 10, 12, 14, 16, 18],
+        "density": [1.55, 1.62, 1.68, 1.71, 1.66, 1.58],
+        "mdx": 1.71,
+        "omc": 14.0
+      },
+      "grain": {
+        "sizes": [20, 10, 4.75, 2, 0.425, 0.075, 0.02, 0.005],
+        "finer": [100, 98, 92, 85, 70, 58, 40, 23]
+      },
+      "cbr": {
+        "pen": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "stress": [120, 240, 410, 560, 680, 760],
+        "cbr95": 18.4
+      }
+    },
+    {
+      "id": "shahrisabz-shahar",
+      "name": "Shahrisabz shahri",
+      "type": "shahar",
+      "sampleId": "SHS-2025-02",
+      "date": "2025-03-18",
+      "depth": "0–30 sm",
+      "description": "To‘q jigarrang qumli loy, yaxshi struktura",
+      "uscs": "SC",
+      "mc": 13.5,
+      "ll": 28,
+      "pl": 16,
+      "pi": 12,
+      "fines": 45,
+      "npk": { "n": 48, "p": 31, "k": 180 },
+      "ph": 7.1,
+      "organic": 1.4,
+      "texture": { "sand": 48, "silt": 30, "clay": 22 },
+      "proctor": {
+        "moisture": [8, 10, 12, 14, 16, 18],
+        "density": [1.58, 1.65, 1.72, 1.74, 1.69, 1.6],
+        "mdx": 1.74,
+        "omc": 13.8
+      },
+      "grain": {
+        "sizes": [20, 10, 4.75, 2, 0.425, 0.075, 0.02, 0.005],
+        "finer": [100, 97, 90, 82, 65, 45, 32, 18]
+      },
+      "cbr": {
+        "pen": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "stress": [140, 280, 450, 600, 720, 800],
+        "cbr95": 21.2
+      }
+    },
+    {
+      "id": "qarshi-tuman",
+      "name": "Qarshi tumani",
+      "type": "tuman",
+      "sampleId": "QT-2025-03",
+      "date": "2025-04-02",
+      "depth": "0–30 sm",
+      "description": "Sug‘oriladigan och jigarrang tuproq",
+      "uscs": "CL",
+      "mc": 15.1,
+      "ll": 35,
+      "pl": 19,
+      "pi": 16,
+      "fines": 62,
+      "npk": { "n": 38, "p": 24, "k": 150 },
+      "ph": 7.6,
+      "organic": 0.9,
+      "texture": { "sand": 35, "silt": 40, "clay": 25 },
+      "proctor": {
+        "moisture": [8, 10, 12, 14, 16, 18],
+        "density": [1.52, 1.6, 1.66, 1.69, 1.64, 1.55],
+        "mdx": 1.69,
+        "omc": 14.2
+      },
+      "grain": {
+        "sizes": [20, 10, 4.75, 2, 0.425, 0.075, 0.02, 0.005],
+        "finer": [100, 99, 95, 88, 75, 62, 48, 28]
+      },
+      "cbr": {
+        "pen": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "stress": [100, 210, 380, 520, 640, 710],
+        "cbr95": 16.8
+      }
+    },
+    {
+      "id": "guzor",
+      "name": "G‘uzor tumani",
+      "type": "tuman",
+      "sampleId": "GZ-2025-04",
+      "date": "2025-04-08",
+      "depth": "0–30 sm",
+      "description": "Qumli loam, o‘rtacha organik",
+      "uscs": "SM",
+      "mc": 12.8,
+      "ll": 26,
+      "pl": 15,
+      "pi": 11,
+      "fines": 40,
+      "npk": { "n": 36, "p": 22, "k": 140 },
+      "ph": 7.3,
+      "organic": 1.0,
+      "texture": { "sand": 55, "silt": 28, "clay": 17 },
+      "proctor": {
+        "moisture": [8, 10, 12, 14, 16, 18],
+        "density": [1.6, 1.67, 1.73, 1.7, 1.63, 1.54],
+        "mdx": 1.73,
+        "omc": 12.5
+      },
+      "grain": {
+        "sizes": [20, 10, 4.75, 2, 0.425, 0.075, 0.02, 0.005],
+        "finer": [100, 96, 88, 78, 58, 40, 26, 14]
+      },
+      "cbr": {
+        "pen": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "stress": [150, 300, 480, 620, 740, 820],
+        "cbr95": 22.0
+      }
+    },
+    {
+      "id": "dehqonobod",
+      "name": "Dehqonobod tumani",
+      "type": "tuman",
+      "sampleId": "DH-2025-05",
+      "date": "2025-04-15",
+      "depth": "0–30 sm",
+      "description": "Tog‘ oldi jigarrang tuproq",
+      "uscs": "ML",
+      "mc": 11.9,
+      "ll": 30,
+      "pl": 20,
+      "pi": 10,
+      "fines": 55,
+      "npk": { "n": 33, "p": 20, "k": 130 },
+      "ph": 7.0,
+      "organic": 1.2,
+      "texture": { "sand": 40, "silt": 45, "clay": 15 },
+      "proctor": {
+        "moisture": [8, 10, 12, 14, 16, 18],
+        "density": [1.5, 1.58, 1.64, 1.67, 1.62, 1.53],
+        "mdx": 1.67,
+        "omc": 13.9
+      },
+      "grain": {
+        "sizes": [20, 10, 4.75, 2, 0.425, 0.075, 0.02, 0.005],
+        "finer": [100, 98, 93, 86, 72, 55, 42, 20]
+      },
+      "cbr": {
+        "pen": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "stress": [110, 230, 400, 540, 650, 730],
+        "cbr95": 17.5
+      }
+    },
+    {
+      "id": "qamashi",
+      "name": "Qamashi tumani",
+      "type": "tuman",
+      "sampleId": "QM-2025-06",
+      "date": "2025-04-20",
+      "depth": "0–30 sm",
+      "description": "Qumloq, past sho‘rlanish",
+      "uscs": "SC",
+      "mc": 13.2,
+      "ll": 29,
+      "pl": 17,
+      "pi": 12,
+      "fines": 48,
+      "npk": { "n": 40, "p": 26, "k": 155 },
+      "ph": 7.2,
+      "organic": 1.05,
+      "texture": { "sand": 50, "silt": 32, "clay": 18 },
+      "proctor": {
+        "moisture": [8, 10, 12, 14, 16, 18],
+        "density": [1.57, 1.64, 1.7, 1.72, 1.67, 1.58],
+        "mdx": 1.72,
+        "omc": 13.6
+      },
+      "grain": {
+        "sizes": [20, 10, 4.75, 2, 0.425, 0.075, 0.02, 0.005],
+        "finer": [100, 97, 91, 83, 66, 48, 34, 19]
+      },
+      "cbr": {
+        "pen": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "stress": [130, 260, 430, 580, 700, 780],
+        "cbr95": 19.6
+      }
+    },
+    {
+      "id": "kasbi",
+      "name": "Kasbi tumani",
+      "type": "tuman",
+      "sampleId": "KS-2025-07",
+      "date": "2025-05-01",
+      "depth": "0–30 sm",
+      "description": "Sug‘oriladigan och tuproq, o‘rtacha NPK",
+      "uscs": "CL",
+      "mc": 14.8,
+      "ll": 34,
+      "pl": 19,
+      "pi": 15,
+      "fines": 60,
+      "npk": { "n": 37, "p": 23, "k": 148 },
+      "ph": 7.5,
+      "organic": 0.95,
+      "texture": { "sand": 38, "silt": 38, "clay": 24 },
+      "proctor": {
+        "moisture": [8, 10, 12, 14, 16, 18],
+        "density": [1.53, 1.61, 1.67, 1.7, 1.65, 1.56],
+        "mdx": 1.7,
+        "omc": 14.1
+      },
+      "grain": {
+        "sizes": [20, 10, 4.75, 2, 0.425, 0.075, 0.02, 0.005],
+        "finer": [100, 99, 94, 87, 74, 60, 46, 26]
+      },
+      "cbr": {
+        "pen": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "stress": [105, 220, 390, 530, 650, 720],
+        "cbr95": 17.1
+      }
+    },
+    {
+      "id": "kitob",
+      "name": "Kitob tumani",
+      "type": "tuman",
+      "sampleId": "KT-2025-08",
+      "date": "2025-05-06",
+      "depth": "0–30 sm",
+      "description": "Tog‘ oldi unumdor tuproq",
+      "uscs": "ML",
+      "mc": 12.4,
+      "ll": 27,
+      "pl": 18,
+      "pi": 9,
+      "fines": 52,
+      "npk": { "n": 45, "p": 30, "k": 170 },
+      "ph": 6.9,
+      "organic": 1.35,
+      "texture": { "sand": 44, "silt": 38, "clay": 18 },
+      "proctor": {
+        "moisture": [8, 10, 12, 14, 16, 18],
+        "density": [1.56, 1.63, 1.69, 1.71, 1.66, 1.57],
+        "mdx": 1.71,
+        "omc": 13.5
+      },
+      "grain": {
+        "sizes": [20, 10, 4.75, 2, 0.425, 0.075, 0.02, 0.005],
+        "finer": [100, 98, 92, 84, 68, 52, 38, 18]
+      },
+      "cbr": {
+        "pen": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "stress": [125, 250, 420, 570, 690, 770],
+        "cbr95": 19.0
+      }
+    },
+    {
+      "id": "koson",
+      "name": "Koson tumani",
+      "type": "tuman",
+      "sampleId": "KO-2025-09",
+      "date": "2025-05-12",
+      "depth": "0–30 sm",
+      "description": "Tekislik sug‘oriladigan tuproq",
+      "uscs": "CL",
+      "mc": 15.4,
+      "ll": 36,
+      "pl": 20,
+      "pi": 16,
+      "fines": 64,
+      "npk": { "n": 35, "p": 21, "k": 142 },
+      "ph": 7.7,
+      "organic": 0.85,
+      "texture": { "sand": 32, "silt": 42, "clay": 26 },
+      "proctor": {
+        "moisture": [8, 10, 12, 14, 16, 18],
+        "density": [1.51, 1.59, 1.65, 1.68, 1.63, 1.54],
+        "mdx": 1.68,
+        "omc": 14.4
+      },
+      "grain": {
+        "sizes": [20, 10, 4.75, 2, 0.425, 0.075, 0.02, 0.005],
+        "finer": [100, 99, 96, 90, 78, 64, 50, 30]
+      },
+      "cbr": {
+        "pen": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "stress": [95, 200, 360, 500, 620, 690],
+        "cbr95": 15.9
+      }
+    },
+    {
+      "id": "mirishkor",
+      "name": "Mirishkor tumani",
+      "type": "tuman",
+      "sampleId": "MR-2025-10",
+      "date": "2025-05-18",
+      "depth": "0–30 sm",
+      "description": "Cho‘l zonasi, past organik",
+      "uscs": "SM",
+      "mc": 10.8,
+      "ll": 24,
+      "pl": 14,
+      "pi": 10,
+      "fines": 35,
+      "npk": { "n": 28, "p": 18, "k": 120 },
+      "ph": 7.8,
+      "organic": 0.7,
+      "texture": { "sand": 62, "silt": 25, "clay": 13 },
+      "proctor": {
+        "moisture": [8, 10, 12, 14, 16, 18],
+        "density": [1.61, 1.68, 1.74, 1.71, 1.64, 1.55],
+        "mdx": 1.74,
+        "omc": 11.8
+      },
+      "grain": {
+        "sizes": [20, 10, 4.75, 2, 0.425, 0.075, 0.02, 0.005],
+        "finer": [100, 95, 86, 74, 52, 35, 22, 12]
+      },
+      "cbr": {
+        "pen": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "stress": [160, 320, 500, 640, 760, 840],
+        "cbr95": 23.1
+      }
+    },
+    {
+      "id": "muborak",
+      "name": "Muborak tumani",
+      "type": "tuman",
+      "sampleId": "MB-2025-11",
+      "date": "2025-05-22",
+      "depth": "0–30 sm",
+      "description": "Sanoat zonasi yaqinidagi qumloq",
+      "uscs": "SC",
+      "mc": 12.1,
+      "ll": 27,
+      "pl": 16,
+      "pi": 11,
+      "fines": 42,
+      "npk": { "n": 31, "p": 19, "k": 128 },
+      "ph": 7.4,
+      "organic": 0.8,
+      "texture": { "sand": 58, "silt": 27, "clay": 15 },
+      "proctor": {
+        "moisture": [8, 10, 12, 14, 16, 18],
+        "density": [1.59, 1.66, 1.72, 1.7, 1.63, 1.54],
+        "mdx": 1.72,
+        "omc": 12.2
+      },
+      "grain": {
+        "sizes": [20, 10, 4.75, 2, 0.425, 0.075, 0.02, 0.005],
+        "finer": [100, 96, 87, 76, 55, 42, 28, 15]
+      },
+      "cbr": {
+        "pen": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "stress": [145, 290, 460, 600, 720, 800],
+        "cbr95": 21.0
+      }
+    },
+    {
+      "id": "nishon",
+      "name": "Nishon tumani",
+      "type": "tuman",
+      "sampleId": "NS-2025-12",
+      "date": "2025-06-01",
+      "depth": "0–30 sm",
+      "description": "Sug‘oriladigan och jigarrang",
+      "uscs": "CL",
+      "mc": 14.0,
+      "ll": 33,
+      "pl": 18,
+      "pi": 15,
+      "fines": 57,
+      "npk": { "n": 39, "p": 25, "k": 152 },
+      "ph": 7.5,
+      "organic": 1.0,
+      "texture": { "sand": 40, "silt": 36, "clay": 24 },
+      "proctor": {
+        "moisture": [8, 10, 12, 14, 16, 18],
+        "density": [1.54, 1.62, 1.68, 1.7, 1.65, 1.56],
+        "mdx": 1.7,
+        "omc": 13.9
+      },
+      "grain": {
+        "sizes": [20, 10, 4.75, 2, 0.425, 0.075, 0.02, 0.005],
+        "finer": [100, 98, 93, 85, 71, 57, 43, 24]
+      },
+      "cbr": {
+        "pen": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "stress": [115, 235, 405, 550, 670, 745],
+        "cbr95": 18.0
+      }
+    },
+    {
+      "id": "chiroqchi",
+      "name": "Chiroqchi tumani",
+      "type": "tuman",
+      "sampleId": "CH-2025-13",
+      "date": "2025-06-08",
+      "depth": "0–30 sm",
+      "description": "Tog‘ oldi, o‘rtacha loy",
+      "uscs": "ML",
+      "mc": 13.0,
+      "ll": 31,
+      "pl": 19,
+      "pi": 12,
+      "fines": 54,
+      "npk": { "n": 41, "p": 27, "k": 160 },
+      "ph": 7.1,
+      "organic": 1.15,
+      "texture": { "sand": 43, "silt": 37, "clay": 20 },
+      "proctor": {
+        "moisture": [8, 10, 12, 14, 16, 18],
+        "density": [1.55, 1.63, 1.69, 1.71, 1.66, 1.57],
+        "mdx": 1.71,
+        "omc": 13.7
+      },
+      "grain": {
+        "sizes": [20, 10, 4.75, 2, 0.425, 0.075, 0.02, 0.005],
+        "finer": [100, 97, 91, 84, 69, 54, 40, 21]
+      },
+      "cbr": {
+        "pen": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "stress": [118, 245, 415, 560, 680, 755],
+        "cbr95": 18.7
+      }
+    },
+    {
+      "id": "shahrisabz-tuman",
+      "name": "Shahrisabz tumani",
+      "type": "tuman",
+      "sampleId": "SHT-2025-14",
+      "date": "2025-06-14",
+      "depth": "0–30 sm",
+      "description": "Unumdor tog‘ oldi tuproq",
+      "uscs": "CL",
+      "mc": 13.8,
+      "ll": 30,
+      "pl": 17,
+      "pi": 13,
+      "fines": 50,
+      "npk": { "n": 47, "p": 32, "k": 175 },
+      "ph": 7.0,
+      "organic": 1.3,
+      "texture": { "sand": 46, "silt": 33, "clay": 21 },
+      "proctor": {
+        "moisture": [8, 10, 12, 14, 16, 18],
+        "density": [1.57, 1.65, 1.71, 1.73, 1.68, 1.59],
+        "mdx": 1.73,
+        "omc": 13.4
+      },
+      "grain": {
+        "sizes": [20, 10, 4.75, 2, 0.425, 0.075, 0.02, 0.005],
+        "finer": [100, 97, 90, 82, 67, 50, 36, 20]
+      },
+      "cbr": {
+        "pen": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "stress": [135, 270, 440, 590, 710, 790],
+        "cbr95": 20.4
+      }
+    },
+    {
+      "id": "yakkabog",
+      "name": "Yakkabog‘ tumani",
+      "type": "tuman",
+      "sampleId": "YK-2025-15",
+      "date": "2025-06-20",
+      "depth": "0–30 sm",
+      "description": "Bog‘dorchilik zonasi, yaxshi organik",
+      "uscs": "ML",
+      "mc": 12.6,
+      "ll": 28,
+      "pl": 18,
+      "pi": 10,
+      "fines": 49,
+      "npk": { "n": 50, "p": 34, "k": 185 },
+      "ph": 6.8,
+      "organic": 1.5,
+      "texture": { "sand": 45, "silt": 36, "clay": 19 },
+      "proctor": {
+        "moisture": [8, 10, 12, 14, 16, 18],
+        "density": [1.56, 1.64, 1.7, 1.72, 1.67, 1.58],
+        "mdx": 1.72,
+        "omc": 13.3
+      },
+      "grain": {
+        "sizes": [20, 10, 4.75, 2, 0.425, 0.075, 0.02, 0.005],
+        "finer": [100, 98, 92, 84, 68, 49, 35, 18]
+      },
+      "cbr": {
+        "pen": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "stress": [128, 255, 425, 575, 695, 775],
+        "cbr95": 19.8
+      }
+    },
+    {
+      "id": "kokdala",
+      "name": "Ko‘kdala tumani",
+      "type": "tuman",
+      "sampleId": "KD-2025-16",
+      "date": "2025-06-25",
+      "depth": "0–30 sm",
+      "description": "Yangi tuman, o‘rtacha unumdorlik",
+      "uscs": "SC",
+      "mc": 13.4,
+      "ll": 29,
+      "pl": 17,
+      "pi": 12,
+      "fines": 47,
+      "npk": { "n": 34, "p": 22, "k": 138 },
+      "ph": 7.3,
+      "organic": 0.92,
+      "texture": { "sand": 52, "silt": 30, "clay": 18 },
+      "proctor": {
+        "moisture": [8, 10, 12, 14, 16, 18],
+        "density": [1.58, 1.65, 1.71, 1.7, 1.64, 1.55],
+        "mdx": 1.71,
+        "omc": 12.8
+      },
+      "grain": {
+        "sizes": [20, 10, 4.75, 2, 0.425, 0.075, 0.02, 0.005],
+        "finer": [100, 96, 89, 80, 62, 47, 33, 17]
+      },
+      "cbr": {
+        "pen": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "stress": [122, 248, 418, 565, 685, 760],
+        "cbr95": 18.9
+      }
+    }
+  ],
+  "videos": [
+    {
+      "id": "amt-sPIbgK0",
+      "title": "Tuproq qanday hosil bo‘ladi",
+      "note": "Tuproq shakllanishi va qatlamlari"
+    },
+    {
+      "id": "9-dicqNoODg",
+      "title": "O‘simlik ildizi va tuproq",
+      "note": "Ildizdan barggacha suv va ozuqa"
+    },
+    {
+      "id": "leHy-Y_8nRs",
+      "title": "Azot aylanishi",
+      "note": "Agrokimyo — ozuqa elementlari"
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Hisobotlar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=16" />
+</head>
+<body class="page-reports" data-require-auth>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text">
+          <span class="brand-name" data-institute data-i18n="brand.institute">Tuproqshunoslik va agrokimyoviy tadqiqotlar instituti</span>
+          <span class="brand-sub" data-i18n="brand.branch">Qashqadaryo bo‘linmasi</span>
+        </span>
+      </a>
+      <div class="header-actions">
+        <div class="lang-switch" data-lang-switch></div>
+        <a class="btn btn-ghost" href="index.html" data-i18n="nav.back">Saytga qaytish</a>
+        <button class="btn btn-ghost" type="button" data-logout hidden data-i18n="auth.logout">Chiqish</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="section section-muted" data-login-panel>
+      <div class="container narrow">
+        <form class="admin-card" data-login-form>
+          <h1 data-i18n="nav.reports">Hisobotlar</h1>
+          <p class="muted-note" data-i18n="auth.reportsNote">Faqat ruxsat berilgan xodimlar ko‘ra oladi.</p>
+          <label>
+            <span data-i18n="auth.login">Login</span>
+            <input type="text" name="username" required autocomplete="username" />
+          </label>
+          <label>
+            <span data-i18n="auth.password">Parol</span>
+            <input type="password" name="password" required autocomplete="current-password" />
+          </label>
+          <button class="btn btn-primary" type="submit" data-i18n="auth.enter">Kirish</button>
+          <p class="form-note error" data-login-error hidden></p>
+        </form>
+      </div>
+    </section>
+
+    <section class="section" data-reports-app hidden>
+      <div class="container">
+        <p class="eyebrow" data-i18n="nav.reports">Hisobotlar</p>
+        <h1 data-i18n="reports.h1">Tuman va shahar laborator hisobotlari</h1>
+        <p class="lead"><span data-i18n="reports.you">Siz:</span> <strong data-session-role></strong></p>
+        <div class="report-toolbar no-print">
+          <a class="btn btn-ghost" href="admin.html" data-director-link hidden data-i18n="reports.admin">Boshqaruv</a>
+          <button class="btn btn-primary" type="button" data-print-report data-i18n="reports.print">Chop etish</button>
+        </div>
+        <h2 class="h-small" data-i18n="reports.pick">Hududni tanlang</h2>
+        <div class="district-list no-print" data-district-list>
+          <p class="muted-note" data-i18n="reports.loading">Ma’lumotlar yuklanmoqda…</p>
+        </div>
+        <article class="report-sheet" data-report-sheet hidden>
+          <header class="report-header">
+            <div>
+              <p class="report-institute" data-report-institute></p>
+              <p class="report-branch" data-i18n="reports.branchLine">Qashqadaryo bo‘linmasi — laborator hisobot</p>
+            </div>
+            <div class="report-meta-block">
+              <p><span data-i18n="reports.sample">Namuna ID</span> <strong data-f="sampleId">—</strong></p>
+              <p><span data-i18n="reports.date">Sana</span> <strong data-f="date">—</strong></p>
+            </div>
+          </header>
+          <div class="report-title-row">
+            <h2 data-f="name">—</h2>
+            <p data-f="description">—</p>
+          </div>
+          <div class="report-file" data-report-file hidden></div>
+          <div class="report-params">
+            <div><span data-i18n="reports.depth">Chuqurlik</span><strong data-f="depth">—</strong></div>
+            <div><span>USCS</span><strong data-f="uscs">—</strong></div>
+            <div><span>MC %</span><strong data-f="mc">—</strong></div>
+            <div><span>LL</span><strong data-f="ll">—</strong></div>
+            <div><span>PL</span><strong data-f="pl">—</strong></div>
+            <div><span>PI</span><strong data-f="pi">—</strong></div>
+            <div><span>FINES %</span><strong data-f="fines">—</strong></div>
+            <div><span>pH</span><strong data-f="ph">—</strong></div>
+            <div><span>Organik %</span><strong data-f="organic">—</strong></div>
+          </div>
+          <div class="chart-grid">
+            <div class="chart-card">
+              <h3 data-i18n="chart.proctor">Proctor (namlik — zichlik)</h3>
+              <canvas id="chart-proctor"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3 data-i18n="chart.grain">Granulometriya (% finer)</h3>
+              <canvas id="chart-grain"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3 data-i18n="chart.npk">NPK</h3>
+              <canvas id="chart-npk"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3 data-i18n="chart.texture">Tekstura (qum / chang / loy)</h3>
+              <canvas id="chart-texture"></canvas>
+            </div>
+            <div class="chart-card chart-wide">
+              <h3 data-i18n="chart.cbr">CBR (stress — penetratsiya)</h3>
+              <canvas id="chart-cbr"></canvas>
+            </div>
+          </div>
+        </article>
+        <p class="muted-note" data-report-empty data-i18n="reports.empty">Hisobotni ko‘rish uchun yuqoridan hududni tanlang.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="i18n.js?v=2"></script>
+  <script src="site.js?v=15"></script>
+  <script src="reports.js?v=13"></script>
+  <script src="private.js?v=13"></script>
+</body>
+</html>

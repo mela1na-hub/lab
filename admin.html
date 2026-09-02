@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Kirish</title>
+  <meta name="description" content="" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=16" />
+</head>
+<body class="page-admin">
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text">
+          <span class="brand-name" data-institute data-i18n="brand.institute">Tuproqshunoslik va agrokimyoviy tadqiqotlar instituti</span>
+          <span class="brand-sub" data-i18n="brand.branch">Qashqadaryo bo‘linmasi</span>
+        </span>
+      </a>
+      <div class="header-actions">
+        <div class="lang-switch" data-lang-switch></div>
+        <a class="btn btn-ghost" href="index.html" data-i18n="nav.back">Saytga qaytish</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="section section-muted" data-login-panel>
+      <div class="container narrow">
+        <form class="admin-card" data-login-form>
+          <h1>Kirish</h1>
+          <p class="form-note error" data-api-note hidden></p>
+          <label>
+            Login
+            <input type="text" name="username" required autocomplete="username" />
+          </label>
+          <label>
+            Parol
+            <input type="password" name="password" required autocomplete="current-password" />
+          </label>
+          <button class="btn btn-primary" type="submit">Kirish</button>
+          <p class="form-note error" data-login-error hidden></p>
+        </form>
+      </div>
+    </section>
+
+    <section class="section" data-app-panel hidden>
+      <div class="container">
+        <div class="admin-topbar">
+          <p>Siz: <strong data-session-role></strong></p>
+          <button class="btn btn-ghost" type="button" data-logout>Chiqish</button>
+        </div>
+
+        <div class="admin-panels" data-director-panels hidden>
+          <div class="admin-card">
+            <h2>Ishchilar</h2>
+            <form class="stack-form" data-worker-form>
+              <label>
+                Ism
+                <input type="text" name="name" required />
+              </label>
+              <label>
+                Lavozim
+                <input type="text" name="lavozim" required />
+              </label>
+              <label>
+                Telegram chat_id
+                <input type="text" name="telegram" placeholder="123456789" required />
+              </label>
+              <p class="muted-note">@username yetarli emas. Pastdagi ro‘yxatdan chat_id ni nusxalang. Ishchilar bosh sahifadagi Rahbariyatda ko‘rinadi (Telegram chiqmaydi).</p>
+              <button class="btn btn-primary" type="submit">Saqlash</button>
+            </form>
+            <ul class="admin-list" data-worker-list></ul>
+          </div>
+
+          <div class="admin-card">
+            <h2>Telegram bot</h2>
+            <ol class="admin-help">
+              <li>BotFather’dan token oling va saqlang.</li>
+              <li>Har bir ishchi botni ochib <code>/start</code> yozadi.</li>
+              <li>“Chatlarni yangilash” — chat_id chiqadi, ishchiga yozing.</li>
+            </ol>
+            <form class="stack-form" data-token-form>
+              <label>
+                Bot token
+                <input type="password" name="token" autocomplete="off" placeholder="123456:ABC..." />
+              </label>
+              <button class="btn btn-primary" type="submit">Tokenni tekshirish va saqlash</button>
+              <p class="muted-note" data-token-status></p>
+            </form>
+            <button class="btn btn-ghost" type="button" data-refresh-chats>Chatlarni yangilash</button>
+            <ul class="admin-list" data-chat-list></ul>
+          </div>
+
+          <div class="admin-card">
+            <h2>Bosh sahifa rasmi</h2>
+            <p class="muted-note">Hero fon rasmini almashtirish. PNG, JPG, WEBP — max 8 MB.</p>
+            <img class="media-preview" data-preview-hero src="images/bo-linma.png" alt="Bosh sahifa rasmi" />
+            <form class="stack-form" data-hero-form>
+              <label>
+                Yangi rasm
+                <input type="file" name="image" accept="image/png,image/jpeg,image/webp,image/gif" required />
+              </label>
+              <button class="btn btn-primary" type="submit">Rasmni saqlash</button>
+              <p class="form-note" data-hero-status></p>
+            </form>
+          </div>
+
+          <div class="admin-card">
+            <h2>E’lon yuborish</h2>
+            <form class="stack-form" data-announce-form>
+              <label>
+                Sarlavha
+                <input type="text" name="title" required />
+              </label>
+              <label>
+                Xabar
+                <textarea name="message" rows="4" required></textarea>
+              </label>
+              <button class="btn btn-primary" type="submit">Yuborish</button>
+              <p class="form-note" data-announce-status></p>
+              <div data-username-links hidden>
+                <p class="muted-note">Faqat username bo‘lganlar uchun havolalar:</p>
+                <ul class="admin-list" data-username-link-list></ul>
+              </div>
+            </form>
+          </div>
+
+          <div class="admin-card admin-wide">
+            <h2>Aloqa ma’lumotlari</h2>
+            <p class="muted-note">Telefon, email, manzil va xarita. Bosh sahifadagi Aloqa bo‘limida ko‘rinadi.</p>
+            <form class="stack-form" data-contact-admin-form>
+              <div class="form-grid">
+                <label>
+                  Telefon
+                  <input type="text" name="phone" required placeholder="+998 71 246-09-50" />
+                </label>
+                <label>
+                  Email
+                  <input type="email" name="email" required placeholder="info@soil.uz" />
+                </label>
+                <label class="span-2">
+                  Manzil
+                  <input type="text" name="address" required />
+                </label>
+                <label>
+                  Xarita sarlavhasi
+                  <input type="text" name="title" placeholder="Qarshi bo‘linmasi" />
+                </label>
+                <label>
+                  Kenglik (lat)
+                  <input type="text" name="lat" required placeholder="38.892663" />
+                </label>
+                <label>
+                  Uzunlik (lng)
+                  <input type="text" name="lng" required placeholder="65.810101" />
+                </label>
+              </div>
+              <button class="btn btn-primary" type="submit">Aloqani saqlash</button>
+              <p class="form-note" data-contact-admin-status></p>
+            </form>
+            <p class="admin-actions">
+              <a class="btn btn-ghost" href="index.html#aloqa">Saytda ko‘rish</a>
+            </p>
+          </div>
+
+          <div class="admin-card admin-wide">
+            <h2>Galereya — rasm va video</h2>
+            <p class="muted-note">Bosh sahifadagi galereyaga foto, MP4 video (max 80 MB) yoki YouTube havolasi qo‘shiladi.</p>
+            <form class="stack-form" data-gallery-form>
+              <div class="form-grid">
+                <label>
+                  Sarlavha
+                  <input type="text" name="title" required />
+                </label>
+                <label>
+                  Turi
+                  <select name="kind" data-gallery-kind>
+                    <option value="photo">Rasm</option>
+                    <option value="video">Video fayl</option>
+                    <option value="youtube">YouTube</option>
+                  </select>
+                </label>
+                <label class="span-2">
+                  Izoh
+                  <input type="text" name="caption" placeholder="Qisqa tavsif (ixtiyoriy)" />
+                </label>
+                <label class="span-2" data-gallery-file-wrap>
+                  Fayl
+                  <input type="file" name="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+                </label>
+                <label class="span-2" data-gallery-url-wrap hidden>
+                  YouTube havolasi
+                  <input type="url" name="url" placeholder="https://youtu.be/..." />
+                </label>
+              </div>
+              <button class="btn btn-primary" type="submit">Galereyaga qo‘shish</button>
+              <p class="form-note" data-gallery-status></p>
+            </form>
+            <ul class="admin-list" data-gallery-list></ul>
+            <p class="admin-actions">
+              <a class="btn btn-ghost" href="index.html#galereya">Saytda ko‘rish</a>
+            </p>
+          </div>
+
+          <div class="admin-card">
+            <h2>Rahbariyat — direktor</h2>
+            <p class="muted-note">Direktor ma’lumoti bosh sahifadagi Rahbariyat bo‘limida ko‘rinadi. Ishchilar yuqoridagi ro‘yxatdan olinadi.</p>
+            <img class="media-preview" data-preview-director alt="Direktor rasmi" hidden />
+            <form class="stack-form" data-staff-form>
+              <label>
+                Ism
+                <input type="text" name="name" required />
+              </label>
+              <label>
+                Lavozim
+                <input type="text" name="role" value="Direktor" required />
+              </label>
+              <label>
+                Qisqa ma’lumot
+                <textarea name="bio" rows="3"></textarea>
+              </label>
+              <button class="btn btn-primary" type="submit">Direktorni saqlash</button>
+              <p class="form-note" data-staff-status></p>
+            </form>
+            <form class="stack-form" data-director-photo-form>
+              <label>
+                Direktor rasmi
+                <input type="file" name="image" accept="image/png,image/jpeg,image/webp,image/gif" required />
+              </label>
+              <button class="btn btn-ghost" type="submit">Rasmni saqlash</button>
+              <p class="form-note" data-director-photo-status></p>
+            </form>
+            <p class="admin-actions">
+              <a class="btn btn-ghost" href="index.html#rahbariyat">Saytda ko‘rish</a>
+            </p>
+          </div>
+        </div>
+
+        <div class="admin-card admin-wide" data-reports-panel>
+            <h2>Hisobotlarni qo‘shish yoki almashtirish</h2>
+            <p class="muted-note">Direktor va ishchilar hisobot qo‘shishi, tahrirlashi va o‘chirishi mumkin. Saytda hisobotlar parol bilan ochiladi.</p>
+            <p class="muted-note" data-worker-reports-note hidden>Siz faqat hisobotlarni qo‘shishingiz, tahrirlashingiz va o‘chirishingiz mumkin.</p>
+          <form class="stack-form district-form" data-district-form>
+            <div class="form-grid">
+              <label class="span-2">
+                Mavjud hisobotni tanlash
+                <select data-district-pick>
+                  <option value="">— Yangi hisobot —</option>
+                </select>
+              </label>
+              <label>
+                ID (slug)
+                <input type="text" name="id" required placeholder="masalan: qarshi-tuman" />
+              </label>
+              <label>
+                Nomi
+                <input type="text" name="name" required />
+              </label>
+              <label>
+                Turi
+                <select name="type">
+                  <option value="tuman">tuman</option>
+                  <option value="shahar">shahar</option>
+                </select>
+              </label>
+              <label>
+                Namuna ID
+                <input type="text" name="sampleId" required />
+              </label>
+              <label>
+                Sana
+                <input type="date" name="date" required />
+              </label>
+              <label>
+                Chuqurlik
+                <input type="text" name="depth" value="0–30 sm" required />
+              </label>
+              <label class="span-2">
+                Tavsif
+                <input type="text" name="description" required />
+              </label>
+              <label>
+                USCS
+                <input type="text" name="uscs" required />
+              </label>
+              <label>
+                MC
+                <input type="number" step="0.1" name="mc" required />
+              </label>
+              <label>
+                LL
+                <input type="number" step="0.1" name="ll" required />
+              </label>
+              <label>
+                PL
+                <input type="number" step="0.1" name="pl" required />
+              </label>
+              <label>
+                PI
+                <input type="number" step="0.1" name="pi" required />
+              </label>
+              <label>
+                FINES
+                <input type="number" step="0.1" name="fines" required />
+              </label>
+              <label>
+                N (azot)
+                <input type="number" step="0.1" name="n" required />
+              </label>
+              <label>
+                P (fosfor)
+                <input type="number" step="0.1" name="p" required />
+              </label>
+              <label>
+                K (kaliy)
+                <input type="number" step="0.1" name="k" required />
+              </label>
+              <label>
+                pH
+                <input type="number" step="0.1" name="ph" value="7.0" />
+              </label>
+              <label>
+                Organik %
+                <input type="number" step="0.01" name="organic" value="1.0" />
+              </label>
+              <label>
+                Qum %
+                <input type="number" step="0.1" name="sand" value="40" />
+              </label>
+              <label>
+                Chang %
+                <input type="number" step="0.1" name="silt" value="35" />
+              </label>
+              <label>
+                Loy %
+                <input type="number" step="0.1" name="clay" value="25" />
+              </label>
+              <label class="span-2">
+                Hisobot fayli (PDF yoki rasm)
+                <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp,image/gif" />
+              </label>
+            </div>
+            <p class="muted-note" data-district-file-note></p>
+            <div class="admin-actions">
+              <button class="btn btn-primary" type="submit">Hisobotni saqlash</button>
+              <button class="btn btn-ghost" type="button" data-district-reset>Yangi hisobot</button>
+            </div>
+            <p class="form-note" data-district-status></p>
+          </form>
+          <h3 class="h-small">Mavjud hisobotlar</h3>
+          <ul class="admin-list" data-admin-district-list></ul>
+          <p class="admin-actions">
+            <a class="btn btn-ghost" href="hisobotlar.html">Hisobotlarni ko‘rish</a>
+          </p>
+        </div>
+
+        <div class="admin-card" data-worker-view>
+          <h2>E’lonlar</h2>
+          <ul class="admin-list" data-announcement-list>
+            <li class="muted-note">Hozircha e’lon yo‘q.</li>
+          </ul>
+          <p class="admin-actions">
+            <a class="btn btn-primary" href="hisobotlar.html">Hisobotlarni ko‘rish</a>
+            <a class="btn btn-ghost" href="index.html">Sayt</a>
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <p class="footer-brand" data-institute>Tuproqshunoslik va agrokimyoviy tadqiqotlar instituti</p>
+        <p>Qashqadaryo bo‘linmasi</p>
+      </div>
+      <div class="footer-links">
+        <a href="https://soil.uz" target="_blank" rel="noopener noreferrer">soil.uz</a>
+        <a href="index.html">Sayt</a>
+      </div>
+      <p class="footer-copy">© <span data-year></span> Barcha huquqlar himoyalangan.</p>
+    </div>
+  </footer>
+
+  <script src="i18n.js?v=2"></script>
+  <script src="site.js?v=15"></script>
+  <script src="admin.js?v=16"></script>
+</body>
+</html>
