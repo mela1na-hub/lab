@@ -7,21 +7,21 @@
     districts: "ttati_districts",
   };
 
-  const USERS = {
-    director: { password: "director123", role: "director", label: "Direktor" },
-    ishchi: { password: "ishchi123", role: "worker", label: "Ishchi" },
-  };
-
   const loginPanel = document.querySelector("[data-login-panel]");
   const appPanel = document.querySelector("[data-app-panel]");
   const loginForm = document.querySelector("[data-login-form]");
   const loginError = document.querySelector("[data-login-error]");
   const logoutBtn = document.querySelector("[data-logout]");
   const roleEl = document.querySelector("[data-session-role]");
-  const directorPanels = document.querySelector("[data-director-panels]");
+  const directorWork = document.querySelector("[data-director-work]");
   const reportsPanel = document.querySelector("[data-reports-panel]");
   const workerView = document.querySelector("[data-worker-view]");
   const workerReportsNote = document.querySelector("[data-worker-reports-note]");
+  const adminTabs = document.querySelector("[data-admin-tabs]");
+  const dailyDirector = document.querySelector("[data-daily-director]");
+  const dailyWorkerPanel = document.querySelector("[data-daily-worker]");
+  const identityForm = document.querySelector("[data-identity-form]");
+  const dailyForm = document.querySelector("[data-daily-form]");
 
   if (!loginPanel || !appPanel) return;
 
@@ -87,6 +87,14 @@
       .replace(/"/g, "&quot;");
   }
 
+  function asList(value) {
+    if (Array.isArray(value)) return value;
+    if (value && typeof value === "object" && (value.id || value.name || value.date || value.text)) {
+      return [value];
+    }
+    return [];
+  }
+
   async function api(path, options = {}) {
     const res = await fetch(path, {
       cache: "no-store",
@@ -140,37 +148,41 @@
     return state;
   }
 
-  async function migrateLocalIfNeeded() {
+  async function migrateLocalIfNeeded(role) {
     if (!apiReady) return;
-    const oldWorkers = readJson(KEYS.workers, []);
-    if ((!state.workers || !state.workers.length) && Array.isArray(oldWorkers) && oldWorkers.length) {
-      const saved = await api("/api/workers", {
-        method: "POST",
-        body: JSON.stringify({ workers: oldWorkers }),
-      });
-      state.workers = saved.workers || oldWorkers;
-    }
-    const oldToken = localStorage.getItem(KEYS.botToken);
-    if (!state.hasToken && oldToken) {
-      try {
-        const saved = await api("/api/token", {
+    if (role === "admin") {
+      const oldWorkers = readJson(KEYS.workers, []);
+      if ((!state.workers || !state.workers.length) && Array.isArray(oldWorkers) && oldWorkers.length) {
+        const saved = await api("/api/workers", {
           method: "POST",
-          body: JSON.stringify({ token: oldToken }),
+          body: JSON.stringify({ workers: oldWorkers }),
         });
-        state.hasToken = !!saved.hasToken;
-        state.botUsername = saved.botUsername || "";
-        localStorage.removeItem(KEYS.botToken);
-      } catch {
-        /* token noto‘g‘ri bo‘lishi mumkin — foydalanuvchi qayta yozadi */
+        state.workers = saved.workers || oldWorkers;
+      }
+      const oldToken = localStorage.getItem(KEYS.botToken);
+      if (!state.hasToken && oldToken) {
+        try {
+          const saved = await api("/api/token", {
+            method: "POST",
+            body: JSON.stringify({ token: oldToken }),
+          });
+          state.hasToken = !!saved.hasToken;
+          state.botUsername = saved.botUsername || "";
+          localStorage.removeItem(KEYS.botToken);
+        } catch {
+          /* token noto‘g‘ri bo‘lishi mumkin — foydalanuvchi qayta yozadi */
+        }
       }
     }
-    const oldDistricts = readJson(KEYS.districts, []);
-    if (Array.isArray(oldDistricts) && oldDistricts.length) {
-      await api("/api/districts", {
-        method: "POST",
-        body: JSON.stringify({ districts: oldDistricts }),
-      });
-      localStorage.removeItem(KEYS.districts);
+    if (role === "director" || role === "worker") {
+      const oldDistricts = readJson(KEYS.districts, []);
+      if (Array.isArray(oldDistricts) && oldDistricts.length) {
+        await api("/api/districts", {
+          method: "POST",
+          body: JSON.stringify({ districts: oldDistricts }),
+        });
+        localStorage.removeItem(KEYS.districts);
+      }
     }
   }
 
@@ -187,13 +199,30 @@
         (w, idx) => `
       <li>
         <strong>${escapeHtml(w.name)}</strong> — ${escapeHtml(w.lavozim)}<br />
-        Telegram: ${escapeHtml(w.telegram)}
+        Telegram: ${escapeHtml(w.telegram)}<br />
+        Login: ${w.login ? `<code>${escapeHtml(w.login)}</code>` : "umumiy (<code>ishchi</code>)"}
         <div class="item-actions">
+          <button type="button" data-edit-worker="${idx}">Tahrirlash</button>
           <button type="button" data-remove-worker="${idx}">O‘chirish</button>
         </div>
       </li>`
       )
       .join("");
+
+    listEl.querySelectorAll("[data-edit-worker]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.getAttribute("data-edit-worker"));
+        const w = (state.workers || [])[i];
+        if (!w || !workerForm) return;
+        const idInput = workerForm.querySelector('input[name="id"]');
+        if (idInput) idInput.value = w.id || "";
+        if (workerForm.name) workerForm.name.value = w.name || "";
+        if (workerForm.lavozim) workerForm.lavozim.value = w.lavozim || "";
+        if (workerForm.telegram) workerForm.telegram.value = w.telegram || "";
+        if (workerForm.login) workerForm.login.value = w.login || "";
+        workerForm.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    });
 
     listEl.querySelectorAll("[data-remove-worker]").forEach((btn) => {
       btn.addEventListener("click", async () => {
@@ -214,23 +243,75 @@
   }
 
   function renderAnnouncements() {
-    const listEl = document.querySelector("[data-announcement-list]");
-    if (!listEl) return;
-    const items = state.announcements || [];
-    if (!items.length) {
-      listEl.innerHTML = "<li class=\"muted-note\">Hozircha e’lon yo‘q.</li>";
-      return;
-    }
-    listEl.innerHTML = items
-      .map(
-        (a) => `
+    const lists = document.querySelectorAll("[data-announcement-list]");
+    if (!lists.length) return;
+    const items = asList(state.announcements);
+    const canEdit = (getSession() || {}).role === "director";
+    const html = !items.length
+      ? "<li class=\"muted-note\">Hozircha e’lon yo‘q.</li>"
+      : items
+          .map((a) => {
+            const actions = canEdit && a.id
+              ? `<div class="item-actions">
+                  <button type="button" data-edit-announce="${escapeHtml(a.id)}">Tahrirlash</button>
+                  <button type="button" data-del-announce="${escapeHtml(a.id)}">O‘chirish</button>
+                </div>`
+              : "";
+            return `
       <li>
         <strong>${escapeHtml(a.title)}</strong>
         <div>${escapeHtml(a.message)}</div>
         <small class="muted-note">${escapeHtml(a.createdAt || "")}</small>
-      </li>`
-      )
-      .join("");
+        ${actions}
+      </li>`;
+          })
+          .join("");
+    lists.forEach((listEl) => {
+      listEl.innerHTML = html;
+      listEl.querySelectorAll("[data-edit-announce]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-edit-announce");
+          const item = items.find((a) => a.id === id);
+          const form = document.querySelector("[data-announce-form]");
+          if (!item || !form) return;
+          const idInput = form.querySelector('input[name="id"]');
+          if (idInput) idInput.value = item.id;
+          if (form.title) form.title.value = item.title || "";
+          if (form.message) form.message.value = item.message || "";
+          const submit = document.querySelector("[data-announce-submit]");
+          const cancel = document.querySelector("[data-announce-cancel]");
+          if (submit) submit.textContent = "Saqlash";
+          if (cancel) cancel.hidden = false;
+          form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
+      });
+      listEl.querySelectorAll("[data-del-announce]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const id = btn.getAttribute("data-del-announce");
+          if (!id || !confirm("E’lonni o‘chirasizmi?")) return;
+          try {
+            const data = await api("/api/announce/delete", {
+              method: "POST",
+              body: JSON.stringify({ id }),
+            });
+            state.announcements = asList(data.announcements);
+            renderAnnouncements();
+          } catch (err) {
+            alert(err.message);
+          }
+        });
+      });
+    });
+  }
+
+  async function loadAnnouncements() {
+    try {
+      const data = await api("/api/announcements");
+      state.announcements = asList(data.announcements);
+      renderAnnouncements();
+    } catch {
+      renderAnnouncements();
+    }
   }
 
   function renderTokenStatus() {
@@ -557,51 +638,254 @@
     loadDistrictCatalog();
   }
 
-  function showApp(session) {
+  let currentTab = "daily";
+  let dailyRoster = [];
+  let dailyToday = "";
+
+  function hideWorkPanels() {
+    if (directorWork) directorWork.hidden = true;
+    if (reportsPanel) reportsPanel.hidden = true;
+    if (workerView) workerView.hidden = true;
+    if (dailyDirector) dailyDirector.hidden = true;
+    if (dailyWorkerPanel) dailyWorkerPanel.hidden = true;
+  }
+
+  function showTab(name) {
+    currentTab = name;
+    const session = getSession() || {};
     const isDirector = session.role === "director";
     const isWorker = session.role === "worker";
-    if (!isDirector && !isWorker) {
+    hideWorkPanels();
+    if (adminTabs) {
+      adminTabs.querySelectorAll("[data-tab]").forEach((btn) => {
+        btn.classList.toggle("is-active", btn.getAttribute("data-tab") === name);
+      });
+    }
+    if (name === "daily") {
+      if (isDirector && dailyDirector) dailyDirector.hidden = false;
+      if (isWorker && dailyWorkerPanel) dailyWorkerPanel.hidden = false;
+    } else if (name === "soil") {
+      if (reportsPanel) reportsPanel.hidden = false;
+      loadDistrictCatalog();
+    } else if (name === "announce") {
+      if (isDirector && directorWork) directorWork.hidden = false;
+      if (workerView) workerView.hidden = false;
+    }
+  }
+
+  function renderDailyRoster() {
+    const listEl = document.querySelector("[data-daily-worker-list]");
+    if (!listEl) return;
+    if (!dailyRoster.length) {
+      listEl.innerHTML = "<p class=\"muted-note\">Hali ishchi yo‘q. Pastdan ism qo‘shing.</p>";
+      return;
+    }
+    listEl.innerHTML = dailyRoster
+      .map((w) => {
+        const status = w.todayStatus || "miss";
+        return `<div class="worker-row-wrap">
+          <a class="worker-row" href="kunlik.html?id=${encodeURIComponent(w.id)}">
+            <span class="worker-dot is-${escapeHtml(status)}"></span>
+            <span>
+              <strong>${escapeHtml(w.name)}</strong>
+              <small>${escapeHtml(w.lavozim || "")}</small>
+            </span>
+          </a>
+          <div class="item-actions">
+            <button type="button" data-edit-staff="${escapeHtml(w.id)}">Tahrirlash</button>
+            <button type="button" data-del-staff="${escapeHtml(w.id)}">O‘chirish</button>
+          </div>
+        </div>`;
+      })
+      .join("");
+
+    listEl.querySelectorAll("[data-edit-staff]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-edit-staff");
+        const w = dailyRoster.find((item) => item.id === id);
+        const form = document.querySelector("[data-daily-add-form]");
+        if (!w || !form) return;
+        const idInput = form.querySelector('input[name="id"]');
+        if (idInput) idInput.value = w.id;
+        if (form.name) form.name.value = w.name || "";
+        if (form.lavozim) form.lavozim.value = w.lavozim || "Ishchi";
+        const title = document.querySelector("[data-daily-add-title]");
+        const submit = document.querySelector("[data-daily-add-submit]");
+        const cancel = document.querySelector("[data-daily-add-cancel]");
+        if (title) title.textContent = "Ishchini tahrirlash";
+        if (submit) submit.textContent = "Saqlash";
+        if (cancel) cancel.hidden = false;
+        form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    });
+
+    listEl.querySelectorAll("[data-del-staff]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-del-staff");
+        const w = dailyRoster.find((item) => item.id === id);
+        if (!id || !confirm(`${w ? w.name : "Ishchi"}ni o‘chirasizmi?`)) return;
+        try {
+          await api("/api/daily/staff/delete", {
+            method: "POST",
+            body: JSON.stringify({ id }),
+          });
+          const session = getSession();
+          if (session) await loadDailyRoster(session);
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    });
+  }
+
+  function fillIdentitySelect() {
+    const sel = document.querySelector("[data-identity-select]");
+    if (!sel) return;
+    const current = String((getSession() || {}).workerId || "");
+    sel.innerHTML =
+      "<option value=\"\">— Tanlang —</option>" +
+      dailyRoster
+        .map(
+          (w) =>
+            `<option value="${escapeHtml(w.id)}" ${w.id === current ? "selected" : ""}>${escapeHtml(w.name)}</option>`
+        )
+        .join("");
+  }
+
+  async function fillTodayLog(session) {
+    if (!dailyForm || !session.workerId) return;
+    dailyForm.hidden = false;
+    if (identityForm && session.username !== "ishchi") identityForm.hidden = true;
+    else if (identityForm && session.workerId) identityForm.hidden = true;
+    const todayEl = document.querySelector("[data-daily-today]");
+    const calLink = document.querySelector("[data-own-calendar]");
+    if (calLink) calLink.href = "kunlik.html";
+    const area = dailyForm.querySelector("textarea");
+    const submitBtn = dailyForm.querySelector("button[type='submit']");
+    const now = new Date();
+    const rest = now.getDay() === 0 || now.getDay() === 6;
+    if (rest) {
+      if (todayEl) todayEl.textContent = "Bugun dam olish kuni. Hisobot yozilmaydi.";
+      if (area) area.disabled = true;
+      if (submitBtn) submitBtn.hidden = true;
+      return;
+    }
+    if (area) area.disabled = false;
+    if (submitBtn) submitBtn.hidden = false;
+    try {
+      const data = await api(
+        `/api/daily/logs?workerId=${encodeURIComponent(session.workerId)}&year=${now.getFullYear()}&month=${now.getMonth() + 1}`
+      );
+      dailyToday = data.today || dailyToday;
+      if (todayEl) todayEl.textContent = `Sana: ${dailyToday}`;
+      const found = asList(data.logs).find((item) => item.date === dailyToday);
+      if (area) area.value = found ? found.text : "";
+    } catch {
+      if (todayEl) todayEl.textContent = dailyToday ? `Sana: ${dailyToday}` : "";
+    }
+  }
+
+  async function loadDailyRoster(session) {
+    try {
+      const data = await api("/api/daily/workers");
+      dailyRoster = asList(data.workers);
+      dailyToday = data.today || "";
+      if (data.workerId && session && !session.workerId) {
+        session.workerId = data.workerId;
+        setSession(session);
+      }
+      if (session.role === "director") renderDailyRoster();
+      if (session.role === "worker") {
+        fillIdentitySelect();
+        const sid = String(session.workerId || data.workerId || "");
+        if (sid) {
+          session.workerId = sid;
+          setSession(session);
+          await fillTodayLog(session);
+        } else if (identityForm) {
+          identityForm.hidden = false;
+          if (dailyForm) dailyForm.hidden = true;
+        }
+      }
+    } catch (err) {
+      const listEl = document.querySelector("[data-daily-worker-list]");
+      if (listEl) listEl.innerHTML = `<p class="muted-note">${escapeHtml(err.message)}</p>`;
+    }
+  }
+
+  function showApp(session) {
+    const isSitePage = document.body.hasAttribute("data-site-admin");
+    const isAdmin = session.role === "admin";
+    const isDirector = session.role === "director";
+    const isWorker = session.role === "worker";
+
+    if (isSitePage) {
+      if (!isAdmin) {
+        window.location.replace("admin.html");
+        return;
+      }
+    } else if (isAdmin) {
+      window.location.replace("sozlamalar.html");
+      return;
+    } else if (!isDirector && !isWorker) {
       showLogin();
       return;
     }
+
     loginPanel.hidden = true;
     appPanel.hidden = false;
     if (roleEl) roleEl.textContent = session.label || session.role;
 
+    document.body.classList.toggle("is-site-admin", isAdmin);
     document.body.classList.toggle("is-director-admin", isDirector);
     document.body.classList.toggle("is-worker-admin", isWorker);
 
-    if (directorPanels) directorPanels.hidden = !isDirector;
-    if (reportsPanel) reportsPanel.hidden = false;
-    if (workerView) workerView.hidden = !isDirector;
     if (workerReportsNote) workerReportsNote.hidden = !isWorker;
 
-    if (isDirector) renderAll();
-    else loadDistrictCatalog();
+    if (isAdmin) {
+      renderAll();
+      return;
+    }
+
+    hideWorkPanels();
+    if (adminTabs) {
+      adminTabs.hidden = false;
+      const announceTab = adminTabs.querySelector("[data-tab-announce]");
+      if (announceTab) announceTab.hidden = false;
+    }
+    loadAnnouncements();
+    showTab("daily");
+    loadDailyRoster(session);
   }
 
   function showLogin() {
-    document.body.classList.remove("is-director-admin", "is-worker-admin");
+    document.body.classList.remove("is-director-admin", "is-worker-admin", "is-site-admin");
     loginPanel.hidden = false;
     appPanel.hidden = true;
+  }
+
+  async function enterSession(session) {
+    setSession(session);
+    if (session.role === "admin" || session.role === "director") {
+      await loadState();
+      await migrateLocalIfNeeded(session.role);
+      await loadState();
+    } else if (session.role === "worker") {
+      await migrateLocalIfNeeded(session.role);
+    }
+    showApp(session);
   }
 
   async function boot() {
     try {
       const me = await api("/api/me");
-      if (me.role === "director" || me.role === "worker") {
-        const session = {
+      if (me.role === "admin" || me.role === "director" || me.role === "worker") {
+        await enterSession({
           username: me.username,
           role: me.role,
           label: me.label,
-        };
-        setSession(session);
-        if (me.role === "director") {
-          await loadState();
-          await migrateLocalIfNeeded();
-          await loadState();
-        }
-        showApp(session);
+          workerId: me.workerId || "",
+        });
         return;
       }
     } catch {
@@ -622,18 +906,13 @@
           method: "POST",
           body: JSON.stringify({ username, password }),
         });
-        setSession({
+        await enterSession({
           username: session.username,
           role: session.role,
           label: session.label,
+          workerId: session.workerId || "",
         });
         loginForm.reset();
-        if (session.role === "director") {
-          await loadState();
-          await migrateLocalIfNeeded();
-          await loadState();
-        }
-        showApp(session);
       } catch (err) {
         if (loginError) {
           loginError.hidden = false;
@@ -661,17 +940,26 @@
       event.preventDefault();
       const fd = new FormData(workerForm);
       const worker = {
+        id: String(fd.get("id") || "").trim(),
         name: String(fd.get("name") || "").trim(),
         lavozim: String(fd.get("lavozim") || "").trim(),
         telegram: String(fd.get("telegram") || "").trim(),
+        login: String(fd.get("login") || "").trim().toLowerCase(),
+        password: String(fd.get("password") || "").trim(),
       };
-      if (!worker.name || !worker.lavozim || !worker.telegram) return;
+      if (!worker.name || !worker.lavozim) return;
       const list = [...(state.workers || [])];
-      const idx = list.findIndex(
-        (w) => w.name.toLowerCase() === worker.name.toLowerCase()
-      );
-      if (idx >= 0) list[idx] = worker;
-      else list.push(worker);
+      let idx = worker.id
+        ? list.findIndex((w) => w.id === worker.id)
+        : list.findIndex((w) => w.name.toLowerCase() === worker.name.toLowerCase());
+      if (idx >= 0) {
+        worker.id = list[idx].id || worker.id;
+        if (!worker.password) delete worker.password;
+        list[idx] = { ...list[idx], ...worker };
+      } else {
+        if (!worker.password) delete worker.password;
+        list.push(worker);
+      }
       try {
         const saved = await api("/api/workers", {
           method: "POST",
@@ -749,20 +1037,40 @@
         if (statusEl) statusEl.textContent = "Yuborilmoqda...";
         const data = await api("/api/announce", {
           method: "POST",
-          body: JSON.stringify({ title, message }),
+          body: JSON.stringify({ title, message, id: String(fd.get("id") || "").trim() }),
         });
-        state.announcements = data.announcements || state.announcements;
+        state.announcements = asList(data.announcements);
         renderAnnouncements();
+        const editing = String(fd.get("id") || "").trim();
         const failed = Array.isArray(data.failed) ? data.failed : [];
         if (statusEl) {
-          statusEl.textContent = failed.length
-            ? `E’lon saqlandi. Telegram: ${data.sent || 0} ta yuborildi. Xato: ${failed.join("; ")}`
-            : `E’lon saqlandi va Telegramga ${data.sent || 0} ta xabar yuborildi.`;
+          if (editing) statusEl.textContent = "E’lon yangilandi.";
+          else if (failed.length) {
+            statusEl.textContent = `E’lon saqlandi. Telegram: ${data.sent || 0} ta yuborildi. Xato: ${failed.join("; ")}`;
+          } else {
+            statusEl.textContent = `E’lon saqlandi va Telegramga ${data.sent || 0} ta xabar yuborildi.`;
+          }
         }
         announceForm.reset();
+        const submit = document.querySelector("[data-announce-submit]");
+        const cancel = document.querySelector("[data-announce-cancel]");
+        if (submit) submit.textContent = "Yuborish";
+        if (cancel) cancel.hidden = true;
       } catch (err) {
         if (statusEl) statusEl.textContent = err.message;
       }
+    });
+  }
+
+  const announceCancel = document.querySelector("[data-announce-cancel]");
+  if (announceCancel && announceForm) {
+    announceCancel.addEventListener("click", () => {
+      announceForm.reset();
+      const submit = document.querySelector("[data-announce-submit]");
+      if (submit) submit.textContent = "Yuborish";
+      announceCancel.hidden = true;
+      const statusEl = document.querySelector("[data-announce-status]");
+      if (statusEl) statusEl.textContent = "";
     });
   }
 
@@ -1093,6 +1401,168 @@
         } catch {
           /* ignore */
         }
+      } catch (err) {
+        if (statusEl) statusEl.textContent = err.message;
+      }
+    });
+  }
+
+  const passwordForm = document.querySelector("[data-password-form]");
+  if (passwordForm) {
+    passwordForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const fd = new FormData(passwordForm);
+      const statusEl = document.querySelector("[data-password-status]");
+      const currentPassword = String(fd.get("currentPassword") || "");
+      const adminPassword = String(fd.get("adminPassword") || "").trim();
+      const adminPassword2 = String(fd.get("adminPassword2") || "").trim();
+      const directorPassword = String(fd.get("directorPassword") || "").trim();
+      const directorPassword2 = String(fd.get("directorPassword2") || "").trim();
+      const workerPassword = String(fd.get("workerPassword") || "").trim();
+      const workerPassword2 = String(fd.get("workerPassword2") || "").trim();
+      if (adminPassword && adminPassword !== adminPassword2) {
+        if (statusEl) statusEl.textContent = "Sayt admin parollari mos emas.";
+        return;
+      }
+      if (directorPassword && directorPassword !== directorPassword2) {
+        if (statusEl) statusEl.textContent = "Direktor parollari mos emas.";
+        return;
+      }
+      if (workerPassword && workerPassword !== workerPassword2) {
+        if (statusEl) statusEl.textContent = "Ishchi parollari mos emas.";
+        return;
+      }
+      if (!adminPassword && !directorPassword && !workerPassword) {
+        if (statusEl) statusEl.textContent = "Yangi parol yozing.";
+        return;
+      }
+      try {
+        if (statusEl) statusEl.textContent = "Saqlanmoqda...";
+        const payload = { currentPassword };
+        if (adminPassword) payload.adminPassword = adminPassword;
+        if (directorPassword) payload.directorPassword = directorPassword;
+        if (workerPassword) payload.workerPassword = workerPassword;
+        await api("/api/passwords", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        passwordForm.reset();
+        if (statusEl) {
+          statusEl.textContent =
+            "Parol yangilandi. O‘zgargan loginlar yangi parol bilan kiradi.";
+        }
+      } catch (err) {
+        if (statusEl) statusEl.textContent = err.message;
+      }
+    });
+  }
+
+  if (adminTabs) {
+    adminTabs.querySelectorAll("[data-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const name = btn.getAttribute("data-tab");
+        if (name) showTab(name);
+      });
+    });
+  }
+
+  if (identityForm) {
+    identityForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const fd = new FormData(identityForm);
+      const workerId = String(fd.get("workerId") || "").trim();
+      const name = String(fd.get("name") || "").trim();
+      const lavozim = String(fd.get("lavozim") || "").trim();
+      const statusEl = document.querySelector("[data-identity-status]");
+      if (!workerId && !name) {
+        if (statusEl) statusEl.textContent = "Ismingizni tanlang yoki yozing.";
+        return;
+      }
+      try {
+        if (statusEl) statusEl.textContent = "";
+        const saved = await api("/api/daily/identity", {
+          method: "POST",
+          body: JSON.stringify({ workerId, name, lavozim }),
+        });
+        const session = getSession() || {};
+        session.workerId = saved.workerId;
+        session.label = saved.label || session.label;
+        setSession(session);
+        if (roleEl) roleEl.textContent = session.label || session.role;
+        identityForm.hidden = true;
+        await fillTodayLog(session);
+      } catch (err) {
+        if (statusEl) statusEl.textContent = err.message;
+        else alert(err.message);
+      }
+    });
+  }
+
+  const dailyAddForm = document.querySelector("[data-daily-add-form]");
+  if (dailyAddForm) {
+    dailyAddForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const fd = new FormData(dailyAddForm);
+      const statusEl = document.querySelector("[data-daily-add-status]");
+      const name = String(fd.get("name") || "").trim();
+      const lavozim = String(fd.get("lavozim") || "").trim();
+      const id = String(fd.get("id") || "").trim();
+      if (!name) return;
+      try {
+        if (statusEl) statusEl.textContent = "Saqlanmoqda...";
+        await api("/api/daily/staff", {
+          method: "POST",
+          body: JSON.stringify({ id, name, lavozim }),
+        });
+        dailyAddForm.reset();
+        if (dailyAddForm.lavozim) dailyAddForm.lavozim.value = "Ishchi";
+        const title = document.querySelector("[data-daily-add-title]");
+        const submit = document.querySelector("[data-daily-add-submit]");
+        const cancel = document.querySelector("[data-daily-add-cancel]");
+        if (title) title.textContent = "Ishchi qo‘shish";
+        if (submit) submit.textContent = "Qo‘shish";
+        if (cancel) cancel.hidden = true;
+        if (statusEl) statusEl.textContent = id ? "Saqlandi." : "Qo‘shildi.";
+        const session = getSession();
+        if (session) await loadDailyRoster(session);
+      } catch (err) {
+        if (statusEl) statusEl.textContent = err.message;
+      }
+    });
+  }
+
+  const dailyAddCancel = document.querySelector("[data-daily-add-cancel]");
+  if (dailyAddCancel && dailyAddForm) {
+    dailyAddCancel.addEventListener("click", () => {
+      dailyAddForm.reset();
+      if (dailyAddForm.lavozim) dailyAddForm.lavozim.value = "Ishchi";
+      const title = document.querySelector("[data-daily-add-title]");
+      const submit = document.querySelector("[data-daily-add-submit]");
+      if (title) title.textContent = "Ishchi qo‘shish";
+      if (submit) submit.textContent = "Qo‘shish";
+      dailyAddCancel.hidden = true;
+      const statusEl = document.querySelector("[data-daily-add-status]");
+      if (statusEl) statusEl.textContent = "";
+    });
+  }
+
+  if (dailyForm) {
+    dailyForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const statusEl = document.querySelector("[data-daily-status]");
+      const text = String(new FormData(dailyForm).get("text") || "").trim();
+      const session = getSession() || {};
+      try {
+        if (statusEl) statusEl.textContent = "Saqlanmoqda...";
+        await api("/api/daily/logs", {
+          method: "POST",
+          body: JSON.stringify({
+            workerId: session.workerId,
+            date: dailyToday,
+            text,
+          }),
+        });
+        if (statusEl) statusEl.textContent = "Bugungi hisobot saqlandi.";
       } catch (err) {
         if (statusEl) statusEl.textContent = err.message;
       }
