@@ -1,5 +1,6 @@
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $root
+Write-Host "DEPRECATED: Production uses Node.js. Run OCHISH.bat or npm start. This PowerShell server is not for the public internet."
 $port = 8766
 $prefix = "http://127.0.0.1:$port/"
 $dataDir = Join-Path $root "data"
@@ -39,9 +40,9 @@ $blockedNames = @(
 )
 
 $script:Sessions = @{}
-$script:DefaultDirectorPassword = "director123"
-$script:DefaultWorkerPassword = "ishchi123"
-$script:DefaultAdminPassword = "admin123"
+$script:DefaultDirectorPassword = ""
+$script:DefaultWorkerPassword = ""
+$script:DefaultAdminPassword = ""
 $script:AuthUsers = @{}
 
 function Normalize-Password($value, $fallback) {
@@ -125,13 +126,18 @@ function Normalize-Worker($w, $old) {
   if ([string]::IsNullOrWhiteSpace($id)) { $id = New-WorkerId }
   $login = ([string]$w.login).Trim().ToLowerInvariant()
   $password = [string]$w.password
+  $telegram = ([string]$w.telegram).Trim()
+  $lavozim = ([string]$w.lavozim).Trim()
   if ([string]::IsNullOrWhiteSpace($password) -and $old) { $password = [string]$old.password }
   if ([string]::IsNullOrWhiteSpace($login) -and $old) { $login = ([string]$old.login).Trim().ToLowerInvariant() }
+  if ([string]::IsNullOrWhiteSpace($telegram) -and $old) { $telegram = ([string]$old.telegram).Trim() }
+  if ([string]::IsNullOrWhiteSpace($lavozim) -and $old) { $lavozim = ([string]$old.lavozim).Trim() }
+  if ([string]::IsNullOrWhiteSpace($lavozim)) { $lavozim = "Ishchi" }
   return @{
     id       = $id
     name     = ([string]$w.name).Trim()
-    lavozim  = ([string]$w.lavozim).Trim()
-    telegram = ([string]$w.telegram).Trim()
+    lavozim  = $lavozim
+    telegram = $telegram
     login    = $login
     password = $password
   }
@@ -298,7 +304,7 @@ function Read-JsonFile($path, $fallback) {
 }
 
 function Write-JsonFile($path, $obj) {
-  $json = $obj | ConvertTo-Json -Depth 20 -Compress
+  $json = ConvertTo-JsonSafe $obj
   $dir = Split-Path -Parent $path
   if (-not (Test-Path -LiteralPath $dir)) {
     New-Item -ItemType Directory -Path $dir -Force | Out-Null
@@ -333,9 +339,13 @@ function Get-AdminData {
   $normalized = @()
   $idsChanged = $false
   foreach ($w in (As-Array $data.workers)) {
-    $nw = Normalize-Worker $w $null
+    if ($null -eq $w -or $w -is [string]) { continue }
+    $name = ""
+    try { $name = ([string]$w.name).Trim() } catch { continue }
+    if ([string]::IsNullOrWhiteSpace($name)) { continue }
+    $nw = Normalize-Worker $w $w
     if ([string]::IsNullOrWhiteSpace([string]$w.id)) { $idsChanged = $true }
-    $normalized += $nw
+    $normalized += , $nw
   }
   $data.workers = $normalized
   $annsNorm = @()
@@ -456,7 +466,7 @@ function Staff-Public {
     $name = ([string]$w.name).Trim()
     $lavozim = ([string]$w.lavozim).Trim()
     if ($name) {
-      $workers += @{
+      $workers += , @{
         name    = $name
         lavozim = $lavozim
         photo   = [string]$w.photo
@@ -484,7 +494,7 @@ function Staff-From($director, $workers) {
     $name = ([string]$w.name).Trim()
     $lavozim = ([string]$w.lavozim).Trim()
     if ($name) {
-      $wlist += @{
+      $wlist += , @{
         name    = $name
         lavozim = $lavozim
         photo   = [string]$w.photo
@@ -504,7 +514,27 @@ function Staff-From($director, $workers) {
 
 function Sync-StaffWorkers($workers) {
   $s = Get-Staff
-  Write-JsonFile $staffPath (Staff-From $s.director $workers)
+  $photos = @{}
+  foreach ($old in (As-Array $s.workers)) {
+    $key = ([string]$old.name).Trim().ToLowerInvariant()
+    if ($key -and -not [string]::IsNullOrWhiteSpace([string]$old.photo)) {
+      $photos[$key] = [string]$old.photo
+    }
+  }
+  $merged = @()
+  foreach ($w in (As-Array $workers)) {
+    $name = ([string]$w.name).Trim()
+    if ([string]::IsNullOrWhiteSpace($name)) { continue }
+    $key = $name.ToLowerInvariant()
+    $photo = [string]$w.photo
+    if ([string]::IsNullOrWhiteSpace($photo) -and $photos.ContainsKey($key)) { $photo = $photos[$key] }
+    $merged += , @{
+      name    = $name
+      lavozim = ([string]$w.lavozim).Trim()
+      photo   = $photo
+    }
+  }
+  Write-JsonFile $staffPath (Staff-From $s.director $merged)
 }
 
 function Get-OverrideList {
@@ -624,8 +654,50 @@ function Read-Body($req) {
   }
 }
 
+function Convert-ToNetJsonObject($obj) {
+  if ($null -eq $obj) { return $null }
+  if ($obj -is [string]) { return $obj }
+  if ($obj -is [bool]) { return [bool]$obj }
+  if ($obj -is [byte] -or $obj -is [int16] -or $obj -is [int] -or $obj -is [long] -or $obj -is [int64] -or $obj -is [uint32] -or $obj -is [uint64] -or $obj -is [double] -or $obj -is [decimal] -or $obj -is [float]) {
+    return $obj
+  }
+  if ($obj -is [datetime]) { return $obj.ToString("o") }
+  if ($obj -is [System.Collections.IDictionary]) {
+    $map = New-Object 'System.Collections.Generic.Dictionary[string,object]'
+    foreach ($k in @($obj.Keys)) {
+      $map[[string]$k] = Convert-ToNetJsonObject $obj[$k]
+    }
+    return $map
+  }
+  if ($obj -is [pscustomobject]) {
+    $map = New-Object 'System.Collections.Generic.Dictionary[string,object]'
+    foreach ($p in $obj.PSObject.Properties) {
+      $map[$p.Name] = Convert-ToNetJsonObject $p.Value
+    }
+    return $map
+  }
+  if ($obj -is [System.Collections.IEnumerable] -and -not ($obj -is [string])) {
+    $list = New-Object System.Collections.ArrayList
+    foreach ($i in $obj) { [void]$list.Add((Convert-ToNetJsonObject $i)) }
+    return $list
+  }
+  return [string]$obj
+}
+
+function ConvertTo-JsonSafe($obj) {
+  try {
+    Add-Type -AssemblyName System.Web.Extensions -ErrorAction Stop
+    $ser = New-Object System.Web.Script.Serialization.JavaScriptSerializer
+    $ser.MaxJsonLength = [int]::MaxValue
+    $ser.RecursionLimit = 100
+    return $ser.Serialize((Convert-ToNetJsonObject $obj))
+  } catch {
+    return ($obj | ConvertTo-Json -Depth 20 -Compress)
+  }
+}
+
 function Send-Json($ctx, $obj, $code = 200) {
-  $json = $obj | ConvertTo-Json -Depth 12 -Compress
+  $json = ConvertTo-JsonSafe $obj
   $bytes = [Text.Encoding]::UTF8.GetBytes($json)
   $ctx.Response.StatusCode = $code
   $ctx.Response.ContentType = "application/json; charset=utf-8"
@@ -647,6 +719,95 @@ function Get-TelegramError($err) {
   return $msg
 }
 
+function Get-ChatFromTelegramUpdate($u) {
+  $msg = $u.message
+  if (-not $msg) { $msg = $u.edited_message }
+  if (-not $msg) { $msg = $u.channel_post }
+  $chat = $null
+  $at = ""
+  if ($msg) {
+    $chat = $msg.chat
+    $at = [string]$msg.date
+  }
+  if (-not $chat -and $u.my_chat_member -and $u.my_chat_member.chat) {
+    $chat = $u.my_chat_member.chat
+    $at = [string]$u.my_chat_member.date
+  }
+  if (-not $chat -and $u.callback_query -and $u.callback_query.message) {
+    $chat = $u.callback_query.message.chat
+    $at = [string]$u.callback_query.message.date
+  }
+  if (-not $chat) { return $null }
+  $id = [string]$chat.id
+  if ([string]::IsNullOrWhiteSpace($id)) { return $null }
+  $name = (([string]$chat.first_name + " " + [string]$chat.last_name).Trim())
+  if ([string]::IsNullOrWhiteSpace($name)) { $name = [string]$chat.title }
+  if ([string]::IsNullOrWhiteSpace($name)) { $name = $id }
+  return @{
+    id       = $id
+    name     = $name
+    username = [string]$chat.username
+    at       = $at
+  }
+}
+
+function Fetch-TelegramChats($token, $data) {
+  try { Invoke-Telegram $token "deleteWebhook" | Out-Null } catch {}
+  $chats = @{}
+  foreach ($c in (As-Array $data.telegramChats)) {
+    $cid = [string]$c.id
+    if ([string]::IsNullOrWhiteSpace($cid)) { $cid = [string]$c.chat_id }
+    if ([string]::IsNullOrWhiteSpace($cid)) { continue }
+    $chats[$cid] = @{
+      id       = $cid
+      name     = [string]$c.name
+      username = [string]$c.username
+      at       = [string]$c.at
+    }
+  }
+  $offset = 0
+  try { $offset = [int64]$data.telegramOffset } catch { $offset = 0 }
+  $retriedOffset = $false
+  $pages = 0
+  $allowed = "allowed_updates=%5B%22message%22%2C%22edited_message%22%2C%22my_chat_member%22%2C%22callback_query%22%5D"
+  while ($pages -lt 15) {
+    $pages++
+    $query = "timeout=0&limit=100&$allowed"
+    if ($offset -gt 0) { $query = "timeout=0&limit=100&offset=$offset&$allowed" }
+    $resp = Invoke-Telegram $token "getUpdates" $query
+    $raw = $null
+    if ($null -ne $resp) {
+      if ($resp.PSObject.Properties.Name -contains "result") { $raw = $resp.result }
+      elseif ($resp.update_id) { $raw = $resp }
+    }
+    $batch = @(As-Array $raw)
+    if ($batch.Count -eq 1 -and $null -eq $batch[0]) { $batch = @() }
+    if ($batch.Count -eq 0) {
+      if (-not $retriedOffset -and $offset -gt 0) {
+        $retriedOffset = $true
+        $offset = 0
+        continue
+      }
+      break
+    }
+    foreach ($u in $batch) {
+      if ($null -eq $u) { continue }
+      try {
+        $uid = [int64]$u.update_id
+        if ($uid + 1 -gt $offset) { $offset = $uid + 1 }
+      } catch {}
+      $row = Get-ChatFromTelegramUpdate $u
+      if ($row) { $chats[[string]$row.id] = $row }
+    }
+    if ($batch.Count -lt 100) { break }
+  }
+  $data.telegramOffset = $offset
+  $list = To-JsonList @($chats.Values)
+  $data.telegramChats = $list
+  Save-AdminData $data
+  return $list
+}
+
 function Invoke-Telegram($token, $method, $query = $null, $bodyObj = $null) {
   $uri = "https://api.telegram.org/bot$token/$method"
   if ($query) { $uri = "$uri`?$query" }
@@ -654,7 +815,7 @@ function Invoke-Telegram($token, $method, $query = $null, $bodyObj = $null) {
     if ($null -eq $bodyObj) {
       return Invoke-RestMethod -Uri $uri -Method Get -TimeoutSec 25
     }
-    $json = $bodyObj | ConvertTo-Json -Compress -Depth 8
+    $json = ConvertTo-JsonSafe $bodyObj
     $bytes = [Text.Encoding]::UTF8.GetBytes($json)
     return Invoke-RestMethod -Uri $uri -Method Post -ContentType "application/json; charset=utf-8" -Body $bytes -TimeoutSec 25
   } catch {
@@ -669,8 +830,85 @@ function Resolve-ChatId($token, $raw) {
   if ($v -match '^-?\d+$') { return $v }
   $user = $v.TrimStart('@')
   $resp = Invoke-Telegram $token "getChat" ("chat_id=" + [Uri]::EscapeDataString("@$user"))
-  if ($resp.ok -and $resp.result.id) { return [string]$resp.result.id }
+  $id = ""
+  if ($resp.result -and $resp.result.id) { $id = [string]$resp.result.id }
+  elseif ($resp.id) { $id = [string]$resp.id }
+  if (-not [string]::IsNullOrWhiteSpace($id)) { return $id }
   throw "@$user uchun chat_id topilmadi. Ishchi botga /start yozishi kerak."
+}
+
+function Test-TelegramSendOk($resp) {
+  if ($null -eq $resp) { return $false }
+  if ($resp.ok -eq $true) { return $true }
+  if ($resp.result -and $resp.result.message_id) { return $true }
+  if ($resp.message_id) { return $true }
+  return $false
+}
+
+function Resolve-WorkerChatId($data, $w) {
+  $raw = ([string]$w.telegram).Trim()
+  if ($raw -match '^-?\d+$') { return $raw }
+  if (-not [string]::IsNullOrWhiteSpace($raw)) {
+    $uname = $raw.TrimStart('@').ToLowerInvariant()
+    foreach ($c in (As-Array $data.telegramChats)) {
+      if (([string]$c.username).Trim().ToLowerInvariant() -eq $uname -and $c.id) {
+        return [string]$c.id
+      }
+    }
+  }
+  $want = ([string]$w.name).Trim().ToLowerInvariant()
+  if (-not [string]::IsNullOrWhiteSpace($want)) {
+    foreach ($c in (As-Array $data.telegramChats)) {
+      $nm = ([string]$c.name).Trim().ToLowerInvariant()
+      if ($nm -and $nm -eq $want -and $c.id) { return [string]$c.id }
+    }
+  }
+  return ""
+}
+
+function Get-AnnouncementTargets($data, $workerIds) {
+  $map = @{}
+  $missing = @()
+  $selected = @()
+  foreach ($id in (As-Array $workerIds)) {
+    $s = ([string]$id).Trim()
+    if ($s) { $selected += $s }
+  }
+  if ($selected.Count -gt 0) {
+    foreach ($sid in $selected) {
+      $w = $null
+      foreach ($x in (As-Array $data.workers)) {
+        if ([string]$x.id -eq $sid) { $w = $x; break }
+      }
+      if (-not $w) {
+        $missing += "Ishchi topilmadi."
+        continue
+      }
+      $label = [string]$w.name
+      $cid = Resolve-WorkerChatId $data $w
+      if ([string]::IsNullOrWhiteSpace($cid)) {
+        $missing += "$label : Telegram chat_id yo'q. Sozlamalarda yozing yoki botga /start."
+        continue
+      }
+      $map[$cid] = $label
+    }
+    return @{ map = $map; missing = $missing }
+  }
+  foreach ($w in (As-Array $data.workers)) {
+    $cid = Resolve-WorkerChatId $data $w
+    if (-not [string]::IsNullOrWhiteSpace($cid)) { $map[$cid] = [string]$w.name }
+  }
+  foreach ($c in (As-Array $data.telegramChats)) {
+    $id = [string]$c.id
+    if ([string]::IsNullOrWhiteSpace($id)) { $id = [string]$c.chat_id }
+    if ([string]::IsNullOrWhiteSpace($id)) { continue }
+    if (-not $map.ContainsKey($id)) {
+      $label = [string]$c.name
+      if ([string]::IsNullOrWhiteSpace($label)) { $label = $id }
+      $map[$id] = $label
+    }
+  }
+  return @{ map = $map; missing = $missing }
 }
 
 function Public-State {
@@ -678,7 +916,7 @@ function Public-State {
   $media = Get-Media
   $chats = @()
   foreach ($c in (As-Array $data.telegramChats)) {
-    $chats += @{
+    $chats += , @{
       id       = [string]$c.id
       name     = [string]$c.name
       username = [string]$c.username
@@ -687,7 +925,9 @@ function Public-State {
   }
   $workers = @()
   foreach ($w in (As-Array $data.workers)) {
-    $workers += @{
+    if ($null -eq $w -or $w -is [string]) { continue }
+    if ([string]::IsNullOrWhiteSpace([string]$w.name)) { continue }
+    $workers += , @{
       id          = [string]$w.id
       name        = [string]$w.name
       lavozim     = [string]$w.lavozim
@@ -698,7 +938,7 @@ function Public-State {
   }
   $anns = @()
   foreach ($a in (As-Array $data.announcements)) {
-    $anns += @{
+    $anns += , @{
       id        = [string]$a.id
       title     = [string]$a.title
       message   = [string]$a.message
@@ -711,9 +951,9 @@ function Public-State {
     ok            = $true
     hasToken      = $hasToken
     botUsername   = [string]$data.botUsername
-    workers       = $workers
-    announcements = $anns
-    chats         = $chats
+    workers       = (To-JsonList $workers)
+    announcements = (To-JsonList $anns)
+    chats         = (To-JsonList $chats)
     districts     = @(As-Array $overrides.districts)
     media         = @{
       hero     = [string]$media.hero
@@ -733,6 +973,14 @@ function Handle-Api($ctx) {
   if (-not $path.StartsWith("/api/")) { return $false }
 
   try {
+    if ($method -eq "GET" -and $path -eq "/api/site-link") {
+      $ips = @(Get-LanIPs)
+      $url = "http://127.0.0.1:$port/"
+      if ($ips.Count -gt 0) { $url = "http://$($ips[0]):$port/" }
+      Send-Json $ctx @{ ok = $true; url = $url }
+      return $true
+    }
+
     if ($method -eq "POST" -and $path -eq "/api/login") {
       Load-AuthUsers
       $body = Read-Body $ctx.Request | ConvertFrom-Json
@@ -815,7 +1063,7 @@ function Handle-Api($ctx) {
         return $true
       }
     }
-    if ($path -eq "/api/telegram/chats") {
+    if ($path -eq "/api/telegram/chats" -or $path -eq "/api/telegram/chats/delete") {
       if (-not $auth -or $role -ne "admin") {
         Send-Json $ctx @{ ok = $false; error = "Ruxsat yo'q." } 403
         return $true
@@ -1116,16 +1364,25 @@ function Handle-Api($ctx) {
         return $true
       }
       $me = Invoke-Telegram $token "getMe"
-      if (-not $me.ok) {
+      $okMe = $false
+      if ($me.ok -eq $true) { $okMe = $true }
+      elseif ($me.result) { $okMe = $true }
+      elseif ($me.username -or $me.id) { $okMe = $true }
+      if (-not $okMe) {
         Send-Json $ctx @{ ok = $false; error = "Telegram tokenni qabul qilmadi." } 400
         return $true
       }
       try { Invoke-Telegram $token "deleteWebhook" | Out-Null } catch {}
-      $uname = [string]$me.result.username
+      $uname = ""
+      if ($me.result -and $me.result.username) { $uname = [string]$me.result.username }
+      elseif ($me.username) { $uname = [string]$me.username }
       $data.botToken = $token
       $data | Add-Member -NotePropertyName botUsername -NotePropertyValue $uname -Force
+      $data.telegramOffset = 0
       Save-AdminData $data
-      Send-Json $ctx @{ ok = $true; hasToken = $true; botUsername = $uname }
+      $chats = @()
+      try { $chats = Fetch-TelegramChats $token (Get-AdminData) } catch {}
+      Send-Json $ctx @{ ok = $true; hasToken = $true; botUsername = $uname; chats = (To-JsonList $chats) }
       return $true
     }
 
@@ -1144,7 +1401,8 @@ function Handle-Api($ctx) {
         $name = ([string]$w.name).Trim()
         $lavozim = ([string]$w.lavozim).Trim()
         $telegram = ([string]$w.telegram).Trim()
-        if (-not ($name -and $lavozim)) { continue }
+        if ([string]::IsNullOrWhiteSpace($name)) { continue }
+        if ([string]::IsNullOrWhiteSpace($lavozim)) { $lavozim = "Ishchi"; $w | Add-Member -NotePropertyName lavozim -NotePropertyValue $lavozim -Force }
         $old = $null
         $wid = ([string]$w.id).Trim()
         if ($wid -and $oldMap.ContainsKey($wid)) { $old = $oldMap[$wid] }
@@ -1153,6 +1411,19 @@ function Handle-Api($ctx) {
           if ($oldMap.ContainsKey($keyName)) { $old = $oldMap[$keyName] }
         }
         $nw = Normalize-Worker $w $old
+        if (-not [string]::IsNullOrWhiteSpace([string]$nw.telegram) -and ([string]$nw.telegram) -notmatch '^-?\d+$') {
+          $tok = [string]$data.botToken
+          $unameWant = ([string]$nw.telegram).TrimStart('@').ToLowerInvariant()
+          foreach ($c in (As-Array $data.telegramChats)) {
+            if (([string]$c.username).Trim().ToLowerInvariant() -eq $unameWant -and $c.id) {
+              $nw.telegram = [string]$c.id
+              break
+            }
+          }
+          if (([string]$nw.telegram) -notmatch '^-?\d+$' -and -not [string]::IsNullOrWhiteSpace($tok)) {
+            try { $nw.telegram = Resolve-ChatId $tok $nw.telegram } catch {}
+          }
+        }
         $login = [string]$nw.login
         if (-not [string]::IsNullOrWhiteSpace($login)) {
           if ($usedLogins.ContainsKey($login)) {
@@ -1161,14 +1432,14 @@ function Handle-Api($ctx) {
           }
           $usedLogins[$login] = $true
         }
-        $list += $nw
+        $list += , $nw
       }
       $data.workers = $list
       Save-AdminData $data
       Load-AuthUsers
       $public = @()
       foreach ($w in $list) {
-        $public += @{
+        $public += , @{
           id          = [string]$w.id
           name        = [string]$w.name
           lavozim     = [string]$w.lavozim
@@ -1388,41 +1659,50 @@ function Handle-Api($ctx) {
         Send-Json $ctx @{ ok = $false; error = "Avval bot tokenini saqlang." } 400
         return $true
       }
-      $offset = 0
-      try { $offset = [int64]$data.telegramOffset } catch { $offset = 0 }
-      $query = "timeout=0"
-      if ($offset -gt 0) { $query = "timeout=0&offset=$offset" }
-      $resp = Invoke-Telegram $token "getUpdates" $query
-      $chats = @{}
-      foreach ($c in (As-Array $data.telegramChats)) {
-        if ($c.id) { $chats[[string]$c.id] = $c }
+      try {
+        $list = Fetch-TelegramChats $token $data
+        Send-Json $ctx @{ ok = $true; chats = (To-JsonList $list) }
+      } catch {
+        Send-Json $ctx @{ ok = $false; error = [string]$_.Exception.Message } 400
       }
-      $maxId = $offset
-      foreach ($u in (As-Array $resp.result)) {
-        if ($u.update_id -gt $maxId) { $maxId = [int64]$u.update_id }
-        $msg = $u.message
-        if (-not $msg) { $msg = $u.edited_message }
-        if (-not $msg) { continue }
-        $chat = $msg.chat
-        if (-not $chat) { continue }
-        $id = [string]$chat.id
-        $name = (([string]$chat.first_name + " " + [string]$chat.last_name).Trim())
-        if ([string]::IsNullOrWhiteSpace($name)) { $name = [string]$chat.title }
-        if ([string]::IsNullOrWhiteSpace($name)) { $name = $id }
-        $chats[$id] = @{
-          id       = $id
-          name     = $name
-          username = [string]$chat.username
-          at       = [string]$msg.date
+      return $true
+    }
+
+    if ($method -eq "POST" -and $path -eq "/api/telegram/chats/delete") {
+      $body = Read-Body $ctx.Request | ConvertFrom-Json
+      $want = ([string]$body.chat_id).Trim()
+      if ([string]::IsNullOrWhiteSpace($want)) {
+        Send-Json $ctx @{ ok = $false; error = "chat_id kerak." } 400
+        return $true
+      }
+      $data = Get-AdminData
+      $kept = @()
+      $found = $false
+      foreach ($c in (As-Array $data.telegramChats)) {
+        $cid = [string]$c.id
+        if ([string]::IsNullOrWhiteSpace($cid)) { $cid = [string]$c.chat_id }
+        if ($cid -eq $want) {
+          $found = $true
+          continue
+        }
+        $kept += , $c
+      }
+      if (-not $found) {
+        Send-Json $ctx @{ ok = $false; error = "Chat topilmadi." } 404
+        return $true
+      }
+      $data.telegramChats = (To-JsonList $kept)
+      Save-AdminData $data
+      $out = @()
+      foreach ($c in (As-Array $data.telegramChats)) {
+        $out += , @{
+          id       = [string]$c.id
+          name     = [string]$c.name
+          username = [string]$c.username
+          at       = [string]$c.at
         }
       }
-      if ($maxId -ge $offset) {
-        $data.telegramOffset = $maxId + 1
-      }
-      $saved = @($chats.Values)
-      $data.telegramChats = $saved
-      Save-AdminData $data
-      Send-Json $ctx @{ ok = $true; chats = $saved }
+      Send-Json $ctx @{ ok = $true; chats = (To-JsonList $out) }
       return $true
     }
 
@@ -1439,7 +1719,7 @@ function Handle-Api($ctx) {
         chat_id = $chatId
         text    = "Qashqadaryo Tuproq Lab: test xabar. Bot ishlayapti."
       }
-      Send-Json $ctx @{ ok = [bool]$resp.ok; chat_id = $chatId }
+      Send-Json $ctx @{ ok = (Test-TelegramSendOk $resp); chat_id = $chatId }
       return $true
     }
 
@@ -1452,6 +1732,17 @@ function Handle-Api($ctx) {
         Send-Json $ctx @{ ok = $false; error = "Sarlavha va xabar kerak." } 400
         return $true
       }
+      $scope = ([string]$body.scope).Trim().ToLowerInvariant()
+      $workerIds = @()
+      foreach ($wid in (As-Array $body.workerIds)) {
+        $s = ([string]$wid).Trim()
+        if ($s) { $workerIds += $s }
+      }
+      if ($scope -eq "selected" -and $workerIds.Count -eq 0) {
+        Send-Json $ctx @{ ok = $false; error = "Tanlangan ishchilarga yuborish uchun kamida bittasini belgilang." } 400
+        return $true
+      }
+      if ($scope -ne "selected") { $workerIds = @() }
       $data = Get-AdminData
       $anns = @()
       $editing = -not [string]::IsNullOrWhiteSpace($editId)
@@ -1494,21 +1785,30 @@ function Handle-Api($ctx) {
       $text = "$title`n`n$message"
       $sent = 0
       $failed = @()
-      foreach ($w in (As-Array $data.workers)) {
-        $label = [string]$w.name
-        $chat = ([string]$w.telegram).Trim()
-        if ([string]::IsNullOrWhiteSpace($chat)) { continue }
-        try {
-          if ([string]::IsNullOrWhiteSpace($token)) { throw "Token yo'q" }
-          $chatId = Resolve-ChatId $token ([string]$w.telegram)
-          $resp = Invoke-Telegram $token "sendMessage" $null @{
-            chat_id = $chatId
-            text    = $text
+      $picked = Get-AnnouncementTargets $data $workerIds
+      $targets = $picked["map"]
+      foreach ($m in (As-Array $picked["missing"])) {
+        if ($m) { $failed += [string]$m }
+      }
+      if ([string]::IsNullOrWhiteSpace($token)) {
+        $failed += "Bot token yo'q. Avval Sozlamalarda tokenni saqlang."
+      } elseif ($targets.Count -eq 0) {
+        if ($failed.Count -eq 0) {
+          $failed += "Telegramga yuborilmadi: qabul qiluvchi topilmadi. Ishchi botga /start yozsin yoki chat_id ni Sozlamalarda yozing."
+        }
+      } else {
+        foreach ($id in @($targets.Keys)) {
+          $label = [string]$targets[$id]
+          try {
+            $resp = Invoke-Telegram $token "sendMessage" $null @{
+              chat_id = [string]$id
+              text    = $text
+            }
+            if (Test-TelegramSendOk $resp) { $sent += 1 }
+            else { $failed += "$label : Telegram rad etdi" }
+          } catch {
+            $failed += "$label : $($_.Exception.Message)"
           }
-          if ($resp.ok) { $sent += 1 }
-          else { $failed += "$label : Telegram rad etdi" }
-        } catch {
-          $failed += "$label : $($_.Exception.Message)"
         }
       }
       Send-Json $ctx @{
@@ -1757,19 +2057,137 @@ function Send-File($ctx, $path) {
   $ctx.Response.Close()
 }
 
+function Get-LanIPs {
+  $found = @()
+  try {
+    $text = ipconfig | Out-String
+    $rx = [regex]::Matches($text, '(?im)IPv4[^\r\n:]*:\s*(\d+\.\d+\.\d+\.\d+)')
+    foreach ($m in $rx) {
+      $ip = [string]$m.Groups[1].Value
+      if ($ip -notmatch '^(127\.|169\.254\.)') { $found += $ip }
+    }
+  } catch {}
+  if ($found.Count -eq 0) {
+    try {
+      Get-WmiObject Win32_NetworkAdapterConfiguration -ErrorAction Stop |
+        Where-Object { $_.IPEnabled } |
+        ForEach-Object {
+          foreach ($ip in @($_.IPAddress)) {
+            if ($ip -match '^\d+\.\d+\.\d+\.\d+$' -and $ip -notmatch '^(127\.|169\.254\.)') {
+              $found += [string]$ip
+            }
+          }
+        }
+    } catch {}
+  }
+  return @($found | Select-Object -Unique)
+}
+
+$proxyCode = @"
+using System;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
+
+public static class LanProxy {
+  public static void Start(int listenPort, string destHost, int destPort) {
+    TcpListener l = new TcpListener(IPAddress.Any, listenPort);
+    l.Start();
+    Thread t = new Thread(delegate() { AcceptLoop(l, destHost, destPort); });
+    t.IsBackground = true;
+    t.Start();
+  }
+
+  static void AcceptLoop(TcpListener l, string destHost, int destPort) {
+    while (true) {
+      TcpClient c = l.AcceptTcpClient();
+      ThreadPool.QueueUserWorkItem(delegate(object state) {
+        Relay((TcpClient)state, destHost, destPort);
+      }, c);
+    }
+  }
+
+  static void Relay(TcpClient client, string destHost, int destPort) {
+    TcpClient backend = null;
+    try {
+      client.NoDelay = true;
+      backend = new TcpClient();
+      backend.NoDelay = true;
+      backend.Connect(destHost, destPort);
+      NetworkStream a = client.GetStream();
+      NetworkStream b = backend.GetStream();
+      Thread t = new Thread(delegate() { Copy(a, b); });
+      t.IsBackground = true;
+      t.Start();
+      Copy(b, a);
+    } catch {
+    } finally {
+      try { client.Close(); } catch {}
+      try { if (backend != null) backend.Close(); } catch {}
+    }
+  }
+
+  static void Copy(NetworkStream from, NetworkStream to) {
+    byte[] buf = new byte[8192];
+    try {
+      int n;
+      while ((n = from.Read(buf, 0, buf.Length)) > 0) {
+        to.Write(buf, 0, n);
+        to.Flush();
+      }
+    } catch {}
+  }
+}
+"@
+
+if (-not ([System.Management.Automation.PSTypeName]'LanProxy').Type) {
+  Add-Type -TypeDefinition $proxyCode -Language CSharp
+}
+
+$internalPort = $port + 10000
 $h = New-Object System.Net.HttpListener
-$h.Prefixes.Add($prefix)
+$h.Prefixes.Add("http://127.0.0.1:$internalPort/")
 try {
   $h.Start()
 } catch {
-  Write-Host "Port $port band. Eski serverni yoping yoki OCHISH.bat ni qayta ishga tushiring."
+  Write-Host "Port $internalPort band. Eski serverni yoping yoki OCHISH.bat ni qayta ishga tushiring."
   Write-Host $_.Exception.Message
   exit 1
 }
 
-Write-Host "Serving $root at $prefix"
-Write-Host "Direktor / ishchi: ${prefix}admin.html"
-Write-Host "Sayt sozlamalari: ${prefix}sozlamalar.html"
+$phoneOk = $false
+try {
+  [LanProxy]::Start($port, "127.0.0.1", $internalPort)
+  Start-Sleep -Milliseconds 200
+  $phoneOk = $true
+} catch {
+  Write-Host $_.Exception.Message
+}
+
+$lanIps = @(Get-LanIPs)
+$publicUrl = "http://127.0.0.1:$port/"
+if ($phoneOk -and $lanIps.Count -gt 0) {
+  $publicUrl = "http://$($lanIps[0]):$port/"
+}
+
+Write-Host "Serving $root"
+Write-Host "Bitta link (kompyuter va telefon, bir xil Wi-Fi): $publicUrl"
+$linkText = @"
+Bitta link — kompyuter va telefon shu manzilda ochiladi.
+Kompyuter va telefon BIR XIL Wi-Fi da bolsin (mobil internet emas).
+
+$publicUrl
+
+Direktor / ishchi: ${publicUrl}admin.html
+Sayt sozlamalari: ${publicUrl}sozlamalar.html
+"@
+[IO.File]::WriteAllText((Join-Path $root "SAYT-LINK.txt"), $publicUrl.Trim() + "`r`n", [Text.UTF8Encoding]::new($false))
+[IO.File]::WriteAllText((Join-Path $root "TELEFON-LINK.txt"), $linkText.Trim() + "`r`n", [Text.UTF8Encoding]::new($false))
+if (-not ($phoneOk -and $lanIps.Count -gt 0)) {
+  Write-Host "Wi-Fi manzil topilmadi. Hozircha faqat shu kompyuterda ochiladi."
+}
+Write-Host "Direktor / ishchi: ${publicUrl}admin.html"
+Write-Host "Sayt sozlamalari: ${publicUrl}sozlamalar.html"
 Load-AuthUsers
 
 while ($h.IsListening) {

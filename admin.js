@@ -88,9 +88,14 @@
   }
 
   function asList(value) {
-    if (Array.isArray(value)) return value;
-    if (value && typeof value === "object" && (value.id || value.name || value.date || value.text)) {
+    if (Array.isArray(value)) return value.filter(Boolean);
+    if (!value || typeof value !== "object") return [];
+    if (value.id || value.chat_id || value.name || value.date || value.text) {
       return [value];
+    }
+    const vals = Object.values(value);
+    if (vals.length && vals.every((v) => v && typeof v === "object" && (v.id || v.chat_id || v.name))) {
+      return vals;
     }
     return [];
   }
@@ -135,9 +140,9 @@
     state = {
       hasToken: !!data.hasToken,
       botUsername: data.botUsername || "",
-      workers: Array.isArray(data.workers) ? data.workers : [],
-      announcements: Array.isArray(data.announcements) ? data.announcements : [],
-      chats: Array.isArray(data.chats) ? data.chats : [],
+      workers: asList(data.workers),
+      announcements: asList(data.announcements),
+      chats: asList(data.chats),
       districts: Array.isArray(data.districts) ? data.districts : [],
       media: data.media || state.media,
       gallery: Array.isArray(data.gallery) ? data.gallery : [],
@@ -152,12 +157,8 @@
     if (!apiReady) return;
     if (role === "admin") {
       const oldWorkers = readJson(KEYS.workers, []);
-      if ((!state.workers || !state.workers.length) && Array.isArray(oldWorkers) && oldWorkers.length) {
-        const saved = await api("/api/workers", {
-          method: "POST",
-          body: JSON.stringify({ workers: oldWorkers }),
-        });
-        state.workers = saved.workers || oldWorkers;
+      if (Array.isArray(oldWorkers) && oldWorkers.length) {
+        localStorage.removeItem(KEYS.workers);
       }
       const oldToken = localStorage.getItem(KEYS.botToken);
       if (!state.hasToken && oldToken) {
@@ -189,7 +190,7 @@
   function renderWorkers() {
     const listEl = document.querySelector("[data-worker-list]");
     if (!listEl) return;
-    const workers = state.workers || [];
+    const workers = asList(state.workers);
     if (!workers.length) {
       listEl.innerHTML = "<li class=\"muted-note\">Ishchilar yo‘q. Telegram chat_id ni pastdagi ro‘yxatdan nusxalang.</li>";
       return;
@@ -199,7 +200,7 @@
         (w, idx) => `
       <li>
         <strong>${escapeHtml(w.name)}</strong> — ${escapeHtml(w.lavozim)}<br />
-        Telegram: ${escapeHtml(w.telegram)}<br />
+        Telegram chat_id: ${w.telegram ? `<code>${escapeHtml(String(w.telegram))}</code>` : "<span class=\"muted-note\">yo‘q — pastdan nusxalang</span>"}<br />
         Login: ${w.login ? `<code>${escapeHtml(w.login)}</code>` : "umumiy (<code>ishchi</code>)"}
         <div class="item-actions">
           <button type="button" data-edit-worker="${idx}">Tahrirlash</button>
@@ -212,7 +213,7 @@
     listEl.querySelectorAll("[data-edit-worker]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const i = Number(btn.getAttribute("data-edit-worker"));
-        const w = (state.workers || [])[i];
+        const w = asList(state.workers)[i];
         if (!w || !workerForm) return;
         const idInput = workerForm.querySelector('input[name="id"]');
         if (idInput) idInput.value = w.id || "";
@@ -227,7 +228,7 @@
     listEl.querySelectorAll("[data-remove-worker]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const i = Number(btn.getAttribute("data-remove-worker"));
-        const next = (state.workers || []).filter((_, idx) => idx !== i);
+        const next = asList(state.workers).filter((_, idx) => idx !== i);
         try {
           const saved = await api("/api/workers", {
             method: "POST",
@@ -332,7 +333,7 @@
   function renderChats() {
     const listEl = document.querySelector("[data-chat-list]");
     if (!listEl) return;
-    const chats = state.chats || [];
+    const chats = asList(state.chats);
     if (!chats.length) {
       listEl.innerHTML =
         "<li class=\"muted-note\">Hali hech kim botga yozmagan. Ishchi botni ochib /start bosing, keyin shu tugmani qayta bosing.</li>";
@@ -341,12 +342,14 @@
     listEl.innerHTML = chats
       .map((c) => {
         const user = c.username ? `@${c.username}` : "";
+        const id = String(c.id || c.chat_id || "");
         return `<li>
           <strong>${escapeHtml(c.name || "Foydalanuvchi")}</strong> ${escapeHtml(user)}<br />
-          chat_id: <code>${escapeHtml(c.id)}</code>
+          chat_id: <code>${escapeHtml(id)}</code>
           <div class="item-actions">
-            <button type="button" data-copy-chat="${escapeHtml(c.id)}">Nusxa</button>
-            <button type="button" data-test-chat="${escapeHtml(c.id)}">Test yuborish</button>
+            <button type="button" data-copy-chat="${escapeHtml(id)}">Nusxa</button>
+            <button type="button" data-test-chat="${escapeHtml(id)}">Test yuborish</button>
+            <button type="button" data-remove-chat="${escapeHtml(id)}">O‘chirish</button>
           </div>
         </li>`;
       })
@@ -374,6 +377,25 @@
             body: JSON.stringify({ chat_id: btn.getAttribute("data-test-chat") }),
           });
           if (statusEl) statusEl.textContent = "Test xabar yuborildi. Telegramni tekshiring.";
+        } catch (err) {
+          if (statusEl) statusEl.textContent = err.message;
+        }
+      });
+    });
+
+    listEl.querySelectorAll("[data-remove-chat]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-remove-chat");
+        if (!id || !confirm("Bu chat_id ni ro‘yxatdan o‘chirasizmi?")) return;
+        const statusEl = document.querySelector("[data-token-status]");
+        try {
+          const data = await api("/api/telegram/chats/delete", {
+            method: "POST",
+            body: JSON.stringify({ chat_id: id }),
+          });
+          state.chats = asList(data.chats);
+          renderChats();
+          if (statusEl) statusEl.textContent = "Chat_id o‘chirildi.";
         } catch (err) {
           if (statusEl) statusEl.textContent = err.message;
         }
@@ -626,9 +648,52 @@
     });
   }
 
+  function announceWorkerSource() {
+    const fromState = asList(state.workers);
+    if (fromState.length) return fromState;
+    return asList(dailyRoster);
+  }
+
+  function renderAnnounceTargets() {
+    const box = document.querySelector("[data-announce-worker-list]");
+    if (!box) return;
+    const workers = announceWorkerSource();
+    if (!workers.length) {
+      box.innerHTML = '<p class="muted-note">Ishchilar yo‘q. Kunlik ish yoki Sozlamalarda ism qo‘shing.</p>';
+      return;
+    }
+    box.innerHTML = workers
+      .map((w) => {
+        const id = String(w.id || "");
+        const note = w.telegram ? "" : ' <span class="muted-note">(chat_id yo‘q)</span>';
+        return `<label class="check-row"><input type="checkbox" name="workerId" value="${escapeHtml(id)}" /> ${escapeHtml(w.name || "Ishchi")}${note}</label>`;
+      })
+      .join("");
+    box.querySelectorAll('input[name="workerId"]').forEach((el) => {
+      el.addEventListener("change", () => {
+        const all = document.querySelector("[data-announce-all]");
+        if (el.checked && all) all.checked = false;
+      });
+    });
+  }
+
+  function bindAnnounceAll() {
+    const all = document.querySelector("[data-announce-all]");
+    if (!all || all.dataset.bound === "1") return;
+    all.dataset.bound = "1";
+    all.addEventListener("change", () => {
+      if (!all.checked) return;
+      document.querySelectorAll('input[name="workerId"]').forEach((el) => {
+        el.checked = false;
+      });
+    });
+  }
+
   function renderAll() {
     renderAnnouncements();
     renderWorkers();
+    renderAnnounceTargets();
+    bindAnnounceAll();
     renderTokenStatus();
     renderChats();
     renderMedia();
@@ -670,6 +735,8 @@
     } else if (name === "announce") {
       if (isDirector && directorWork) directorWork.hidden = false;
       if (workerView) workerView.hidden = false;
+      renderAnnounceTargets();
+      bindAnnounceAll();
     }
   }
 
@@ -794,7 +861,11 @@
         session.workerId = data.workerId;
         setSession(session);
       }
-      if (session.role === "director") renderDailyRoster();
+      if (session.role === "director") {
+        renderDailyRoster();
+        renderAnnounceTargets();
+        bindAnnounceAll();
+      }
       if (session.role === "worker") {
         fillIdentitySelect();
         const sid = String(session.workerId || data.workerId || "");
@@ -895,6 +966,14 @@
   }
 
   if (loginForm) {
+    loginForm.querySelectorAll("[data-fill-user]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const user = loginForm.querySelector("[name=username]");
+        const pass = loginForm.querySelector("[name=password]");
+        if (user) user.value = btn.getAttribute("data-fill-user") || "";
+        if (pass) pass.focus();
+      });
+    });
     loginForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const fd = new FormData(loginForm);
@@ -948,13 +1027,15 @@
         password: String(fd.get("password") || "").trim(),
       };
       if (!worker.name || !worker.lavozim) return;
-      const list = [...(state.workers || [])];
+      const list = [...asList(state.workers)];
       let idx = worker.id
         ? list.findIndex((w) => w.id === worker.id)
-        : list.findIndex((w) => w.name.toLowerCase() === worker.name.toLowerCase());
+        : list.findIndex((w) => String(w.name || "").toLowerCase() === worker.name.toLowerCase());
       if (idx >= 0) {
         worker.id = list[idx].id || worker.id;
         if (!worker.password) delete worker.password;
+        if (!worker.telegram) worker.telegram = list[idx].telegram || "";
+        if (!worker.login) worker.login = list[idx].login || "";
         list[idx] = { ...list[idx], ...worker };
       } else {
         if (!worker.password) delete worker.password;
@@ -965,9 +1046,12 @@
           method: "POST",
           body: JSON.stringify({ workers: list }),
         });
-        state.workers = saved.workers || list;
+        state.workers = asList(saved.workers).length ? asList(saved.workers) : list;
         renderWorkers();
+        renderAnnounceTargets();
         workerForm.reset();
+        const idInput = workerForm.querySelector('input[name="id"]');
+        if (idInput) idInput.value = "";
       } catch (err) {
         alert(err.message);
       }
@@ -993,9 +1077,16 @@
         });
         state.hasToken = !!saved.hasToken;
         state.botUsername = saved.botUsername || "";
+        state.chats = asList(saved.chats);
         localStorage.removeItem(KEYS.botToken);
         renderTokenStatus();
+        renderChats();
         tokenForm.reset();
+        if (statusEl) {
+          statusEl.textContent = state.chats.length
+            ? `Token saqlandi. ${state.chats.length} ta chat_id topildi.`
+            : "Token saqlandi. Ishchi botga /start yozsin, keyin «Chatlarni yangilash» bosing.";
+        }
       } catch (err) {
         if (statusEl) statusEl.textContent = err.message;
       }
@@ -1009,12 +1100,12 @@
       try {
         chatsBtn.disabled = true;
         const data = await api("/api/telegram/chats");
-        state.chats = data.chats || [];
+        state.chats = asList(data.chats);
         renderChats();
         if (statusEl) {
           statusEl.textContent = state.chats.length
-            ? `${state.chats.length} ta chat topildi.`
-            : "Hali chat yo‘q. Botga /start yozing.";
+            ? `${state.chats.length} ta chat_id topildi. Nusxa tugmasi bilan ishchiga yozing.`
+            : "Hali chat_id yo‘q. Ishchi botni ochib /start yozsin, 5 soniya kutib qayta bosing.";
         }
       } catch (err) {
         if (statusEl) statusEl.textContent = err.message;
@@ -1026,32 +1117,59 @@
 
   const announceForm = document.querySelector("[data-announce-form]");
   if (announceForm) {
+    bindAnnounceAll();
     announceForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const fd = new FormData(announceForm);
       const title = String(fd.get("title") || "").trim();
       const message = String(fd.get("message") || "").trim();
       const statusEl = document.querySelector("[data-announce-status]");
+      const sendAll = Boolean(announceForm.querySelector("[data-announce-all]")?.checked);
+      const workerIds = [...announceForm.querySelectorAll('input[name="workerId"]:checked')].map(
+        (el) => String(el.value || "").trim()
+      ).filter(Boolean);
+      const scope = !sendAll && workerIds.length ? "selected" : "all";
       if (!title || !message) return;
+      if (!sendAll && !workerIds.length) {
+        if (statusEl) statusEl.textContent = "Hammaga ni belgilang, yoki kamida bitta ishchini tanlang.";
+        return;
+      }
       try {
         if (statusEl) statusEl.textContent = "Yuborilmoqda...";
         const data = await api("/api/announce", {
           method: "POST",
-          body: JSON.stringify({ title, message, id: String(fd.get("id") || "").trim() }),
+          body: JSON.stringify({
+            title,
+            message,
+            id: String(fd.get("id") || "").trim(),
+            scope,
+            workerIds: scope === "selected" ? workerIds : [],
+          }),
         });
         state.announcements = asList(data.announcements);
         renderAnnouncements();
         const editing = String(fd.get("id") || "").trim();
-        const failed = Array.isArray(data.failed) ? data.failed : [];
+        const failed = Array.isArray(data.failed)
+          ? data.failed.map(String).filter(Boolean)
+          : data.failed
+            ? Object.values(data.failed).map(String).filter(Boolean)
+            : [];
         if (statusEl) {
           if (editing) statusEl.textContent = "E’lon yangilandi.";
-          else if (failed.length) {
-            statusEl.textContent = `E’lon saqlandi. Telegram: ${data.sent || 0} ta yuborildi. Xato: ${failed.join("; ")}`;
+          else if (Number(data.sent) > 0 && failed.length) {
+            statusEl.textContent = `Telegram: ${data.sent} ta yetib bordi. Xato: ${failed.join("; ")}`;
+          } else if (Number(data.sent) > 0) {
+            statusEl.textContent = `E’lon Telegramga ${data.sent} ta odamga yuborildi.`;
           } else {
-            statusEl.textContent = `E’lon saqlandi va Telegramga ${data.sent || 0} ta xabar yuborildi.`;
+            statusEl.textContent = failed.length
+              ? failed.join("; ")
+              : "E’lon saytga saqlandi, lekin Telegramga yuborilmadi. Xodimda chat_id bo‘lsin yoki botga /start yozsin.";
           }
         }
         announceForm.reset();
+        renderAnnounceTargets();
+        const allBox = announceForm.querySelector("[data-announce-all]");
+        if (allBox) allBox.checked = true;
         const submit = document.querySelector("[data-announce-submit]");
         const cancel = document.querySelector("[data-announce-cancel]");
         if (submit) submit.textContent = "Yuborish";
@@ -1066,6 +1184,9 @@
   if (announceCancel && announceForm) {
     announceCancel.addEventListener("click", () => {
       announceForm.reset();
+      renderAnnounceTargets();
+      const allBox = announceForm.querySelector("[data-announce-all]");
+      if (allBox) allBox.checked = true;
       const submit = document.querySelector("[data-announce-submit]");
       if (submit) submit.textContent = "Yuborish";
       announceCancel.hidden = true;

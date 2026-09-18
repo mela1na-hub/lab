@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=21" />
+  <link rel="stylesheet" href="styles.css?v=27" />
 </head>
 <body class="page-admin">
   <header class="site-header">
@@ -33,6 +33,11 @@
       <div class="container narrow">
         <form class="admin-card" data-login-form>
           <h1>Kirish</h1>
+          <p class="muted-note">Kimligingizni bosing, keyin parolni yozing.</p>
+          <div class="login-roles" data-login-roles>
+            <button class="btn btn-ghost" type="button" data-fill-user="director">Direktor</button>
+            <button class="btn btn-ghost" type="button" data-fill-user="ishchi">Ishchi</button>
+          </div>
           <p class="form-note error" data-api-note hidden></p>
           <label>
             Login
@@ -130,6 +135,7 @@
         <div class="admin-panels" data-director-work hidden>
           <div class="admin-card">
             <h2>E’lon yuborish</h2>
+            <p class="muted-note">Xabar saytda saqlanadi va Telegramda botning o‘ziga emas — tanlangan xodimning shaxsiy chatiga ketadi.</p>
             <form class="stack-form" data-announce-form>
               <input type="hidden" name="id" />
               <label>
@@ -140,6 +146,15 @@
                 Xabar
                 <textarea name="message" rows="4" required></textarea>
               </label>
+              <fieldset class="announce-to">
+                <legend>Kimga yuborilsin</legend>
+                <p class="muted-note">Hammaga, yoki pastdan 1–2 ishchini belgilang.</p>
+                <label class="check-row">
+                  <input type="checkbox" name="sendAll" value="1" checked data-announce-all />
+                  Hammaga
+                </label>
+                <div class="announce-worker-list" data-announce-worker-list></div>
+              </fieldset>
               <div class="admin-actions">
                 <button class="btn btn-primary" type="submit" data-announce-submit>Yuborish</button>
                 <button class="btn btn-ghost" type="button" data-announce-cancel hidden>Bekor</button>
@@ -298,6 +313,6 @@
 
   <script src="i18n.js?v=2"></script>
   <script src="site.js?v=15"></script>
-  <script src="admin.js?v=23"></script>
+  <script src="admin.js?v=30"></script>
 </body>
 </html>

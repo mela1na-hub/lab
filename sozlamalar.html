@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=18" />
+  <link rel="stylesheet" href="styles.css?v=27" />
 </head>
 <body class="page-admin" data-site-admin>
   <header class="site-header">
@@ -66,34 +66,34 @@
               </label>
               <label>
                 Yangi sayt admin paroli
-                <input type="password" name="adminPassword" minlength="6" autocomplete="new-password" />
+                <input type="password" name="adminPassword" minlength="8" autocomplete="new-password" />
               </label>
               <label>
                 Sayt admin parolini takrorlang
-                <input type="password" name="adminPassword2" minlength="6" autocomplete="new-password" />
+                <input type="password" name="adminPassword2" minlength="8" autocomplete="new-password" />
               </label>
               <label>
                 Yangi direktor paroli
-                <input type="password" name="directorPassword" minlength="6" autocomplete="new-password" />
+                <input type="password" name="directorPassword" minlength="8" autocomplete="new-password" />
               </label>
               <label>
                 Direktor parolini takrorlang
-                <input type="password" name="directorPassword2" minlength="6" autocomplete="new-password" />
+                <input type="password" name="directorPassword2" minlength="8" autocomplete="new-password" />
               </label>
               <label>
                 Yangi ishchi paroli
-                <input type="password" name="workerPassword" minlength="6" autocomplete="new-password" />
+                <input type="password" name="workerPassword" minlength="8" autocomplete="new-password" />
               </label>
               <label>
                 Ishchi parolini takrorlang
-                <input type="password" name="workerPassword2" minlength="6" autocomplete="new-password" />
+                <input type="password" name="workerPassword2" minlength="8" autocomplete="new-password" />
               </label>
               <button class="btn btn-primary" type="submit">Parollarni saqlash</button>
               <p class="form-note" data-password-status></p>
             </form>
           </div>
 
-          <div class="admin-card">
+          <div class="admin-card admin-wide">
             <h2>Ishchilar</h2>
             <form class="stack-form" data-worker-form>
               <input type="hidden" name="id" />
@@ -115,7 +115,7 @@
               </label>
               <label>
                 Parol (ixtiyoriy)
-                <input type="password" name="password" autocomplete="new-password" minlength="6" />
+                <input type="password" name="password" autocomplete="new-password" minlength="8" />
               </label>
               <p class="muted-note">Login bersangiz, ishchi o‘z akkaunti bilan kiradi. Bo‘sh qoldirsangiz, umumiy <code>ishchi</code> loginidan kirib ismini tanlaydi. @username yetarli emas — chat_id ni pastdan nusxalang.</p>
               <button class="btn btn-primary" type="submit">Saqlash</button>
@@ -123,12 +123,12 @@
             <ul class="admin-list" data-worker-list></ul>
           </div>
 
-          <div class="admin-card">
+          <div class="admin-card admin-wide">
             <h2>Telegram bot</h2>
             <ol class="admin-help">
               <li>BotFather’dan token oling va saqlang.</li>
-              <li>Har bir ishchi botni ochib <code>/start</code> yozadi.</li>
-              <li>“Chatlarni yangilash” — chat_id chiqadi, ishchiga yozing.</li>
+              <li>Har bir ishchi o‘z telefonida botni ochib <code>/start</code> yozadi (faqat @username yetarli emas).</li>
+              <li>“Chatlarni yangilash” — raqamli <code>chat_id</code> chiqadi. «Nusxa» bosib ishchining Telegram maydoniga yozing.</li>
             </ol>
             <form class="stack-form" data-token-form>
               <label>
@@ -142,7 +142,7 @@
             <ul class="admin-list" data-chat-list></ul>
           </div>
 
-          <div class="admin-card">
+          <div class="admin-card admin-wide">
             <h2>Bosh sahifa rasmi</h2>
             <p class="muted-note">Hero fon rasmini almashtirish. PNG, JPG, WEBP — max 8 MB.</p>
             <img class="media-preview" data-preview-hero src="images/bo-linma.png" alt="Bosh sahifa rasmi" />
@@ -233,7 +233,7 @@
             </p>
           </div>
 
-          <div class="admin-card">
+          <div class="admin-card admin-wide">
             <h2>Rahbariyat — direktor</h2>
             <p class="muted-note">Direktor ma’lumoti bosh sahifadagi Rahbariyat bo‘limida ko‘rinadi. Ishchilar yuqoridagi ro‘yxatdan olinadi.</p>
             <img class="media-preview" data-preview-director alt="Direktor rasmi" hidden />
@@ -286,6 +286,6 @@
 
   <script src="i18n.js?v=2"></script>
   <script src="site.js?v=15"></script>
-  <script src="admin.js?v=23"></script>
+  <script src="admin.js?v=30"></script>
 </body>
 </html>

@@ -25,6 +25,7 @@
       "nav.contact": "Aloqa",
       "nav.appeal": "Murojaat",
       "nav.back": "Saytga qaytish",
+      "nav.login": "Kirish",
       "hero.h1": "Viloyat tuproq tahlili — laborator aniqlik bilan",
       "hero.lead":
         "Qashqadaryo shahar va tumanlaridan olingan namunalarni agrokimyoviy va mexanik tahlil qilamiz, amaliy tavsiyalar tayyorlaymiz.",
@@ -68,6 +69,9 @@
       "staff.error":
         "Rahbariyatni yuklab bo‘lmadi. Saytni OCHISH.bat orqali oching.",
       "staff.director": "Direktor",
+      "staff.loginEyebrow": "Xodimlar",
+      "staff.loginHint": "Direktor va ishchilar shu yerdan kiradi. Telefonda ham shu tugma.",
+      "staff.qrHint": "Kompyuterda ochiq bo‘lsa, telefon kamerasini shu kodga tuting.",
       "staff.worker": "Ishchi",
       "staff.workers": "Ishchilar",
       "staff.teamTitle": "Laborant va mutaxassislar",
@@ -171,6 +175,7 @@
       "nav.contact": "Контакты",
       "nav.appeal": "Обращение",
       "nav.back": "На сайт",
+      "nav.login": "Вход",
       "hero.h1": "Анализ почв области — с лабораторной точностью",
       "hero.lead":
         "Проводим агрохимический и механический анализ проб из городов и районов Кашкадарьи, готовим практические рекомендации.",
@@ -214,6 +219,9 @@
       "staff.error":
         "Не удалось загрузить руководство. Откройте сайт через OCHISH.bat.",
       "staff.director": "Директор",
+      "staff.loginEyebrow": "Сотрудники",
+      "staff.loginHint": "Директор и сотрудники входят здесь. На телефоне — та же кнопка.",
+      "staff.qrHint": "Если сайт открыт на компьютере, наведите камеру телефона на этот код.",
       "staff.worker": "Сотрудник",
       "staff.workers": "Сотрудники",
       "staff.teamTitle": "Лаборанты и специалисты",
@@ -318,6 +326,7 @@
       "nav.contact": "Contact",
       "nav.appeal": "Inquiry",
       "nav.back": "Back to site",
+      "nav.login": "Sign in",
       "hero.h1": "Regional soil analysis — with laboratory precision",
       "hero.lead":
         "We run agrochemical and mechanical tests on samples from Kashkadarya cities and districts, and prepare practical recommendations.",
@@ -361,6 +370,9 @@
       "staff.error":
         "Could not load leadership. Open the site with OCHISH.bat.",
       "staff.director": "Director",
+      "staff.loginEyebrow": "Staff",
+      "staff.loginHint": "Director and workers sign in here. Same button on the phone.",
+      "staff.qrHint": "If the site is open on the computer, point the phone camera at this code.",
       "staff.worker": "Staff member",
       "staff.workers": "Staff",
       "staff.teamTitle": "Lab technicians and specialists",

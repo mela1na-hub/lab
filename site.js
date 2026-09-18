@@ -40,33 +40,12 @@
       window.location.href = "admin.html";
     };
 
-    const brand = document.querySelector(".brand");
-    if (brand) {
-      let clicks = 0;
-      let clickTimer = 0;
-      brand.addEventListener("click", (event) => {
-        clicks += 1;
-        window.clearTimeout(clickTimer);
-        if (clicks >= 5) {
-          event.preventDefault();
-          clicks = 0;
-          openAdmin();
-          return;
-        }
-        clickTimer = window.setTimeout(() => {
-          clicks = 0;
-        }, 2000);
-      });
-    }
-
     let taps = 0;
     let tapTimer = 0;
-    document.addEventListener("keydown", (event) => {
-      const tag = (event.target && event.target.tagName) || "";
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-      if (event.key !== "a" && event.key !== "A") {
-        taps = 0;
-        return;
+    const bumpSecret = (event) => {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
       }
       taps += 1;
       window.clearTimeout(tapTimer);
@@ -78,6 +57,21 @@
       tapTimer = window.setTimeout(() => {
         taps = 0;
       }, 1200);
+    };
+
+    const mark = document.querySelector(".brand-mark");
+    if (mark) {
+      mark.addEventListener("click", bumpSecret);
+    }
+
+    document.addEventListener("keydown", (event) => {
+      const tag = (event.target && event.target.tagName) || "";
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (event.key !== "a" && event.key !== "A") {
+        taps = 0;
+        return;
+      }
+      bumpSecret();
     });
   }
 

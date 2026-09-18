@@ -2,3 +2,8 @@ admin-data.json
 serve.log
 .env
 .env.*
+!.env.example
+TELEFON-LINK.txt
+SAYT-LINK.txt
+node_modules
+dist
