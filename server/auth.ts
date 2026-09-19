@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { COOKIE_SECURE, SESSION_DAYS } from "./env.js";
+import { SESSION_DAYS } from "./env.js";
 import { query } from "./db.js";
 import { randomId } from "./crypto.js";
 
@@ -23,21 +23,30 @@ declare global {
 
 const COOKIE = "ttati_sid";
 
-export function cookieOptions() {
+function isHttps(req: Request) {
+  const xf = String(req.get("x-forwarded-proto") || "")
+    .split(",")[0]
+    .trim()
+    .toLowerCase();
+  if (xf) return xf === "https";
+  return req.secure === true || req.protocol === "https";
+}
+
+export function cookieOptions(req: Request) {
   return {
     httpOnly: true,
     sameSite: "lax" as const,
-    secure: COOKIE_SECURE,
+    secure: isHttps(req),
     path: "/",
     maxAge: SESSION_DAYS * 24 * 60 * 60 * 1000,
   };
 }
 
-export function clearCookieOptions() {
+export function clearCookieOptions(req: Request) {
   return {
     httpOnly: true,
     sameSite: "lax" as const,
-    secure: COOKIE_SECURE,
+    secure: isHttps(req),
     path: "/",
     maxAge: 0,
   };

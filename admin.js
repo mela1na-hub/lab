@@ -117,7 +117,8 @@
       data = {};
     }
     if (!res.ok || data.ok === false) {
-      throw new Error(data.error || `Server xatosi (${res.status})`);
+      const msg = data.error || (res.status === 404 ? "Kirish API topilmadi." : `Server xatosi (${res.status})`);
+      throw new Error(msg);
     }
     return data;
   }

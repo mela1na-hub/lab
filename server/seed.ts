@@ -13,9 +13,18 @@ function readJson<T>(rel: string, fallback: T): T {
 
 async function ensureUser(username: string, role: string, label: string, password: string, workerIdValue: string | null) {
   const { rows } = await query(`SELECT id FROM users WHERE username = $1`, [username]);
-  if (rows.length) return;
+  if (rows.length) {
+    if (password && password.length >= 8) {
+      const hash = await hashPassword(password);
+      await query(
+        `UPDATE users SET password_hash = $2, failed_attempts = 0, locked_until = NULL, updated_at = now() WHERE username = $1`,
+        [username, hash]
+      );
+    }
+    return;
+  }
   let pass = password;
-  if (!pass || pass.length < 12) {
+  if (!pass || pass.length < 8) {
     pass = randomId(12);
     console.warn(
       `Created ${username} with a generated password (save it now, it will not be shown again): ${pass}`

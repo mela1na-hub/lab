@@ -189,7 +189,7 @@ export function mountApi(app: Express) {
     );
     await recordAttempt(ip, username, true);
     const sid = await createSession(user.id);
-    res.cookie(COOKIE, sid, cookieOptions());
+    res.cookie(COOKIE, sid, cookieOptions(req));
     res.json({
       ok: true,
       username: user.username,
@@ -202,7 +202,7 @@ export function mountApi(app: Express) {
   app.post("/api/logout", async (req, res) => {
     const sid = req.cookies?.[COOKIE];
     if (sid) await destroySession(sid);
-    res.cookie(COOKIE, "", clearCookieOptions());
+    res.cookie(COOKIE, "", clearCookieOptions(req));
     res.json({ ok: true });
   });
 
