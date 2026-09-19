@@ -1027,7 +1027,7 @@ function Handle-Api($ctx) {
       Load-AuthUsers
       $body = Read-Body $ctx.Request | ConvertFrom-Json
       $username = ([string]$body.username).Trim().ToLowerInvariant()
-      $password = [string]$body.password
+      $password = ([string]$body.password).Trim()
       if (-not $script:AuthUsers.ContainsKey($username)) {
         Send-Json $ctx @{ ok = $false; error = "Login yoki parol noto'g'ri." } 401
         return $true

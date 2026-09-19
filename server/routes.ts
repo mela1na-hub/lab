@@ -158,7 +158,7 @@ export function mountApi(app: Express) {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) return fail(res, 400, "Login yoki parol noto'g'ri.");
     const username = parsed.data.username.trim().toLowerCase();
-    const password = parsed.data.password;
+    const password = parsed.data.password.trim();
     const ip = clientIp(req);
     if (await tooManyAttempts(ip, username)) {
       return fail(res, 429, "Ko‘p urinish. 15 daqiqadan so‘ng qayta urinib ko‘ring.");

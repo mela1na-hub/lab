@@ -48,21 +48,21 @@ export async function seed() {
     "admin",
     "admin",
     "Sayt admin",
-    process.env.INITIAL_ADMIN_PASSWORD || "",
+    process.env.INITIAL_ADMIN_PASSWORD || "admin123",
     null
   );
   await ensureUser(
     "director",
     "director",
     "Direktor",
-    process.env.INITIAL_DIRECTOR_PASSWORD || "",
+    process.env.INITIAL_DIRECTOR_PASSWORD || "director123",
     null
   );
   await ensureUser(
     "ishchi",
     "worker",
     "Ishchi",
-    process.env.INITIAL_WORKER_PASSWORD || "",
+    process.env.INITIAL_WORKER_PASSWORD || "ishchi123",
     null
   );
 
