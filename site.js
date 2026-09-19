@@ -178,38 +178,40 @@
       return;
     }
     const dir = staffData.director || {};
+    const dirName = String(dir.name || "").trim();
     const workers = Array.isArray(staffData.workers) ? staffData.workers : [];
     const photo = dir.photo
       ? `<img class="staff-photo" src="${escapeHtml(dir.photo)}" alt="" />`
       : "";
-    const workerCards = workers.length
-      ? workers
-          .map(
-            (w) => `<article class="staff-block">
+    const workerCards = workers
+      .filter((w) => String(w.name || "").trim())
+      .map(
+        (w) => `<article class="staff-block">
             ${w.photo ? `<img class="staff-photo" src="${escapeHtml(w.photo)}" alt="" />` : ""}
             <p class="staff-role">${escapeHtml(staffRole(w.lavozim, "staff.worker"))}</p>
             <h3>${escapeHtml(maskName(w.name || ""))}</h3>
           </article>`
-          )
-          .join("")
-      : `<article class="staff-block">
-            <p class="staff-role">${escapeHtml(tx("staff.workers"))}</p>
-            <h3>${escapeHtml(tx("staff.teamTitle"))}</h3>
-            <p>${escapeHtml(tx("staff.teamText"))}</p>
-            <p class="muted-note">${escapeHtml(tx("staff.teamNote"))}</p>
-          </article>`;
-    staffGrid.innerHTML = `<article class="staff-block staff-director${photo ? " has-photo" : ""}">
+      )
+      .join("");
+    const directorCard = dirName
+      ? `<article class="staff-block staff-director${photo ? " has-photo" : ""}">
           ${photo}
           <div>
             <p class="staff-role">${escapeHtml(staffRole(dir.role, "staff.director"))}</p>
-            <h3>${escapeHtml(maskName(dir.name || tx("staff.dirFallback")))}</h3>
-            <p>${escapeHtml(dir.bio || tx("staff.dirBio"))}</p>
+            <h3>${escapeHtml(maskName(dirName))}</h3>
+            ${dir.bio ? `<p>${escapeHtml(dir.bio)}</p>` : ""}
           </div>
-        </article>${workerCards}`;
+        </article>`
+      : "";
+    if (!directorCard && !workerCards) {
+      staffGrid.innerHTML = `<p class="muted-note">${escapeHtml(tx("staff.teamNote"))}</p>`;
+      return;
+    }
+    staffGrid.innerHTML = `${directorCard}${workerCards}`;
   }
 
   if (staffGrid) {
-    fetch("data/staff.json", { cache: "no-store" })
+    fetch("data/rahbariyat.json?v=19", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((staff) => {
         if (!staff) {

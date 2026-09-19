@@ -44,6 +44,8 @@ import {
   staffPublic,
   todayYmd,
   workerBrief,
+  writeStaffFileDirector,
+  writeStaffFileWorkers,
   youtubeId,
 } from "./lib.js";
 import { fetchTelegramUpdates, resolveChatId, telegram } from "./telegram.js";
@@ -532,6 +534,13 @@ export function mountApi(app: Express) {
       `UPDATE director_profile SET name = $1, role = $2, bio = $3, updated_at = now() WHERE id = 1`,
       [name, role, bio]
     );
+    writeStaffFileDirector({ name, role, bio });
+    res.json({ ok: true, staff: await staffPublic() });
+  });
+
+  app.post("/api/staff/workers", requireAuth(["admin"]), async (req, res) => {
+    const incoming = Array.isArray(req.body?.workers) ? req.body.workers : [];
+    writeStaffFileWorkers(incoming);
     res.json({ ok: true, staff: await staffPublic() });
   });
 

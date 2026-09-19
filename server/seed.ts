@@ -60,8 +60,8 @@ export async function seed() {
   if (alreadySeeded) return;
 
   const media = readJson("data/site-media.json", {
-    hero: "images/bo-linma.png",
-    building: "images/bo-linma.png",
+    hero: "images/bo-linma.jpg",
+    building: "images/bo-linma.jpg",
     v: 1,
   });
   await query(
@@ -166,7 +166,6 @@ export async function seed() {
   const { rows: wcount } = await query<{ n: string }>(`SELECT count(*)::text AS n FROM workers`);
   if (Number(wcount[0].n) === 0) {
     const fromAdmin = admin.workers || [];
-    const fromStaff = staff.workers || [];
     const seen = new Set<string>();
     for (const w of fromAdmin) {
       const id = w.id || workerId();
@@ -191,16 +190,6 @@ export async function seed() {
           [login, passwordHash, w.name || login, id]
         );
       }
-    }
-    for (const w of fromStaff) {
-      const name = (w.name || "").trim();
-      if (!name) continue;
-      const { rows: exists } = await query(`SELECT id FROM workers WHERE lower(name) = lower($1)`, [name]);
-      if (exists.length) continue;
-      await query(
-        `INSERT INTO workers (id, name, lavozim, photo) VALUES ($1,$2,$3,$4)`,
-        [workerId(), name, w.lavozim || "Ishchi", w.photo || ""]
-      );
     }
   }
 

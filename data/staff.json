@@ -1,1 +1,9 @@
-{"workers":[{"photo":"","name":"Xazratova Shaxlo Baxtiyorovna","lavozim":"xodimlar bilan ishlash bo\u0027yicha bosh mutaxassis"},{"photo":"","name":"Ibodulayev Ozodbek A\u0027zam o\u0027g\u0027li","lavozim":"Bo\u0027lim mudiri"},{"photo":"","name":"Musayev Uchqun Shomurod o\u0027g\u0027li","lavozim":"Yetakchi mutaxassis"},{"photo":"","name":"Narzullayev Asadbek","lavozim":"Kotib"},{"photo":"","name":"NOROV DIYORBEK SHOMUROD O‘G‘LI","lavozim":"Dala ekspeditsiya bolimi mutaxassisi"},{"photo":"","name":"JURAQULOV MIRJALOL DILSHOD O‘G‘LI","lavozim":"Agrokimyo bo\u0027limi mudiri"},{"photo":"","name":"BERDIYEV DILMUROD XOLMURODOVICH","lavozim":"Direktorning ilmiy ishlar bo\u0027yicha o\u0027rinbosari"},{"photo":"","name":"NURXONOV AZAMAT ANVAR O‘G‘LI","lavozim":"Yetakchi mutaxassis"},{"photo":"","name":"BURIYEV XIKMATULLA RUZIMUROTOVICH","lavozim":"director"},{"photo":"","name":"NURMATOV HOJIMUROD ABDIKARIM O‘G‘LI","lavozim":"Bo\u0027lim mudiri"}],"director":{"bio":"Qashqadaryo bo‘linmasi rahbariyati. Ma’lumotlar admin panel orqali yangilanadi.","photo":"","name":"Bo\u0027riyev Hikmatullo","role":"Direktor"}}
+{
+  "workers": [],
+  "director": {
+    "bio": "",
+    "photo": "",
+    "name": "",
+    "role": "Direktor"
+  }
+}

@@ -27,7 +27,7 @@
     const caption = escapeHtml(item.caption || "");
     let media = "";
     if (item.type === "photo") {
-      media = `<img src="${escapeHtml(item.src)}" alt="${title}" loading="lazy" />`;
+      media = `<img src="${escapeHtml(item.src)}" alt="${title}" loading="lazy" decoding="async" />`;
     } else if (item.type === "video") {
       media = `<video src="${escapeHtml(item.src)}" controls preload="metadata"></video>`;
     } else if (item.type === "youtube") {

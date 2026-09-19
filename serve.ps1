@@ -16,6 +16,7 @@ $dailyLogsPath = Join-Path $dataDir "daily-logs.json"
 $galleryImgDir = Join-Path $root "images\gallery"
 $galleryVidDir = Join-Path $root "media\gallery"
 $reportsDir = Join-Path $root "files\reports"
+$script:TelegramOffsetPath = Join-Path $dataDir "telegram-offset.txt"
 
 @(
   $uploadDir,
@@ -230,7 +231,6 @@ function Add-NamedWorker($name, $lavozim) {
   $workers += , $nw
   $data.workers = $workers
   Save-AdminData $data
-  Sync-StaffWorkers $workers
   return $nw
 }
 
@@ -250,7 +250,6 @@ function Delete-NamedWorker($id) {
   if (-not $found) { return $false }
   $data.workers = $kept
   Save-AdminData $data
-  Sync-StaffWorkers $kept
   return $true
 }
 
@@ -277,7 +276,6 @@ function Update-NamedWorker($id, $name, $lavozim) {
   if ($null -eq $updated) { return $null }
   $data.workers = $kept
   Save-AdminData $data
-  Sync-StaffWorkers $kept
   return $updated
 }
 
@@ -376,14 +374,62 @@ function Save-AdminData($data) {
 
 function Get-Media {
   $media = Read-JsonFile $mediaPath ([pscustomobject]@{
-    hero     = "images/bo-linma.png"
-    building = "images/bo-linma.png"
+    hero     = "images/bo-linma.jpg"
+    building = "images/bo-linma.jpg"
     v        = 1
   })
-  if ([string]::IsNullOrWhiteSpace([string]$media.hero)) { $media.hero = "images/bo-linma.png" }
-  if ([string]::IsNullOrWhiteSpace([string]$media.building)) { $media.building = "images/bo-linma.png" }
+  if ([string]::IsNullOrWhiteSpace([string]$media.hero)) { $media.hero = "images/bo-linma.jpg" }
+  if ([string]::IsNullOrWhiteSpace([string]$media.building)) { $media.building = "images/bo-linma.jpg" }
   if (-not $media.v) { $media | Add-Member -NotePropertyName v -NotePropertyValue 1 -Force }
   return $media
+}
+
+function To-RelPath([string]$full) {
+  $rootFull = [IO.Path]::GetFullPath($root)
+  $fullPath = [IO.Path]::GetFullPath($full)
+  if ($fullPath.StartsWith($rootFull, [StringComparison]::OrdinalIgnoreCase)) {
+    return ($fullPath.Substring($rootFull.Length) -replace '\\', '/').TrimStart('/')
+  }
+  return ($fullPath -replace '\\', '/')
+}
+
+function Compress-SiteJpeg([string]$srcPath, [long]$quality = 62) {
+  $ext = [IO.Path]::GetExtension($srcPath).ToLowerInvariant()
+  if ($ext -notin @(".png", ".jpg", ".jpeg", ".bmp")) { return $srcPath }
+  try {
+    Add-Type -AssemblyName System.Drawing -ErrorAction SilentlyContinue | Out-Null
+    $srcLen = (Get-Item -LiteralPath $srcPath).Length
+    $img = [System.Drawing.Image]::FromFile($srcPath)
+    $w = $img.Width
+    $h = $img.Height
+    $bmp = New-Object System.Drawing.Bitmap $w, $h
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
+    $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+    $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+    $g.Clear([System.Drawing.Color]::White)
+    $g.DrawImage($img, 0, 0, $w, $h)
+    $img.Dispose()
+    $g.Dispose()
+    $codec = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq "image/jpeg" }
+    $ep = New-Object System.Drawing.Imaging.EncoderParameters 1
+    $ep.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter ([System.Drawing.Imaging.Encoder]::Quality, $quality)
+    $tmp = Join-Path ([IO.Path]::GetTempPath()) ([guid]::NewGuid().ToString("N") + ".jpg")
+    $bmp.Save($tmp, $codec, $ep)
+    $bmp.Dispose()
+    $newLen = (Get-Item -LiteralPath $tmp).Length
+    if ($newLen -ge $srcLen -and $ext -in @(".jpg", ".jpeg")) {
+      Remove-Item -LiteralPath $tmp -Force
+      return $srcPath
+    }
+    $dest = [IO.Path]::ChangeExtension($srcPath, ".jpg")
+    if (Test-Path -LiteralPath $srcPath) { Remove-Item -LiteralPath $srcPath -Force }
+    Move-Item -LiteralPath $tmp -Destination $dest -Force
+    return $dest
+  } catch {
+    return $srcPath
+  }
 }
 
 function Save-Media($media) {
@@ -459,6 +505,10 @@ function Get-Staff {
   return $s
 }
 
+function New-PublicWorkerId {
+  return "p" + [guid]::NewGuid().ToString("N").Substring(0, 12)
+}
+
 function Staff-Public {
   $s = Get-Staff
   $workers = @()
@@ -466,7 +516,10 @@ function Staff-Public {
     $name = ([string]$w.name).Trim()
     $lavozim = ([string]$w.lavozim).Trim()
     if ($name) {
+      $id = ([string]$w.id).Trim()
+      if ([string]::IsNullOrWhiteSpace($id)) { $id = New-PublicWorkerId }
       $workers += , @{
+        id      = $id
         name    = $name
         lavozim = $lavozim
         photo   = [string]$w.photo
@@ -494,7 +547,10 @@ function Staff-From($director, $workers) {
     $name = ([string]$w.name).Trim()
     $lavozim = ([string]$w.lavozim).Trim()
     if ($name) {
+      $id = ([string]$w.id).Trim()
+      if ([string]::IsNullOrWhiteSpace($id)) { $id = New-PublicWorkerId }
       $wlist += , @{
+        id      = $id
         name    = $name
         lavozim = $lavozim
         photo   = [string]$w.photo
@@ -510,31 +566,6 @@ function Staff-From($director, $workers) {
     }
     workers  = $wlist
   }
-}
-
-function Sync-StaffWorkers($workers) {
-  $s = Get-Staff
-  $photos = @{}
-  foreach ($old in (As-Array $s.workers)) {
-    $key = ([string]$old.name).Trim().ToLowerInvariant()
-    if ($key -and -not [string]::IsNullOrWhiteSpace([string]$old.photo)) {
-      $photos[$key] = [string]$old.photo
-    }
-  }
-  $merged = @()
-  foreach ($w in (As-Array $workers)) {
-    $name = ([string]$w.name).Trim()
-    if ([string]::IsNullOrWhiteSpace($name)) { continue }
-    $key = $name.ToLowerInvariant()
-    $photo = [string]$w.photo
-    if ([string]::IsNullOrWhiteSpace($photo) -and $photos.ContainsKey($key)) { $photo = $photos[$key] }
-    $merged += , @{
-      name    = $name
-      lavozim = ([string]$w.lavozim).Trim()
-      photo   = $photo
-    }
-  }
-  Write-JsonFile $staffPath (Staff-From $s.director $merged)
 }
 
 function Get-OverrideList {
@@ -707,16 +738,20 @@ function Send-Json($ctx, $obj, $code = 200) {
   $ctx.Response.Close()
 }
 
+function Redact-TelegramSecret([string]$text) {
+  return ([string]$text) -replace 'bot\d+:[A-Za-z0-9_-]+', 'bot<redacted>'
+}
+
 function Get-TelegramError($err) {
   $msg = [string]$err.Exception.Message
   try {
     if ($err.ErrorDetails -and $err.ErrorDetails.Message) {
       $parsed = $err.ErrorDetails.Message | ConvertFrom-Json
-      if ($parsed.description) { return [string]$parsed.description }
-      return [string]$err.ErrorDetails.Message
+      if ($parsed.description) { $msg = [string]$parsed.description }
+      else { $msg = [string]$err.ErrorDetails.Message }
     }
   } catch {}
-  return $msg
+  return (Redact-TelegramSecret $msg)
 }
 
 function Get-ChatFromTelegramUpdate($u) {
@@ -752,6 +787,9 @@ function Get-ChatFromTelegramUpdate($u) {
 }
 
 function Fetch-TelegramChats($token, $data) {
+  if ($script:TelegramBotPolling) {
+    return To-JsonList @(As-Array $data.telegramChats)
+  }
   try { Invoke-Telegram $token "deleteWebhook" | Out-Null } catch {}
   $chats = @{}
   foreach ($c in (As-Array $data.telegramChats)) {
@@ -808,16 +846,17 @@ function Fetch-TelegramChats($token, $data) {
   return $list
 }
 
-function Invoke-Telegram($token, $method, $query = $null, $bodyObj = $null) {
+function Invoke-Telegram($token, $method, $query = $null, $bodyObj = $null, $timeoutSec = 25) {
+  if ([int]$timeoutSec -lt 5) { $timeoutSec = 25 }
   $uri = "https://api.telegram.org/bot$token/$method"
   if ($query) { $uri = "$uri`?$query" }
   try {
     if ($null -eq $bodyObj) {
-      return Invoke-RestMethod -Uri $uri -Method Get -TimeoutSec 25
+      return Invoke-RestMethod -Uri $uri -Method Get -TimeoutSec $timeoutSec
     }
     $json = ConvertTo-JsonSafe $bodyObj
     $bytes = [Text.Encoding]::UTF8.GetBytes($json)
-    return Invoke-RestMethod -Uri $uri -Method Post -ContentType "application/json; charset=utf-8" -Body $bytes -TimeoutSec 25
+    return Invoke-RestMethod -Uri $uri -Method Post -ContentType "application/json; charset=utf-8" -Body $bytes -TimeoutSec $timeoutSec
   } catch {
     throw (Get-TelegramError $_)
   }
@@ -844,6 +883,9 @@ function Test-TelegramSendOk($resp) {
   if ($resp.message_id) { return $true }
   return $false
 }
+
+. (Join-Path $root "telegram-bot.ps1")
+Load-DotEnvFile (Join-Path $root ".env")
 
 function Resolve-WorkerChatId($data, $w) {
   $raw = ([string]$w.telegram).Trim()
@@ -1380,6 +1422,8 @@ function Handle-Api($ctx) {
       $data | Add-Member -NotePropertyName botUsername -NotePropertyValue $uname -Force
       $data.telegramOffset = 0
       Save-AdminData $data
+      Set-TelegramPollOffset 0
+      $script:TelegramWebhookCleared = $false
       $chats = @()
       try { $chats = Fetch-TelegramChats $token (Get-AdminData) } catch {}
       Send-Json $ctx @{ ok = $true; hasToken = $true; botUsername = $uname; chats = (To-JsonList $chats) }
@@ -1448,7 +1492,6 @@ function Handle-Api($ctx) {
           hasPassword = -not [string]::IsNullOrWhiteSpace([string]$w.password)
         }
       }
-      Sync-StaffWorkers $list
       Send-Json $ctx @{ ok = $true; workers = (To-JsonList $public) }
       return $true
     }
@@ -1471,6 +1514,29 @@ function Handle-Api($ctx) {
         photo = [string]$s.director.photo
       }
       Save-Staff $director (As-Array $s.workers)
+      Send-Json $ctx @{ ok = $true; staff = (Staff-Public) }
+      return $true
+    }
+
+    if ($method -eq "POST" -and $path -eq "/api/staff/workers") {
+      $body = Read-Body $ctx.Request | ConvertFrom-Json
+      $s = Get-Staff
+      $list = @()
+      foreach ($w in (As-Array $body.workers)) {
+        $name = ([string]$w.name).Trim()
+        if ([string]::IsNullOrWhiteSpace($name)) { continue }
+        $lavozim = ([string]$w.lavozim).Trim()
+        if ([string]::IsNullOrWhiteSpace($lavozim)) { $lavozim = "Ishchi" }
+        $id = ([string]$w.id).Trim()
+        if ([string]::IsNullOrWhiteSpace($id)) { $id = New-PublicWorkerId }
+        $list += , @{
+          id      = $id
+          name    = $name
+          lavozim = $lavozim
+          photo   = [string]$w.photo
+        }
+      }
+      Save-Staff $s.director $list
       Send-Json $ctx @{ ok = $true; staff = (Staff-Public) }
       return $true
     }
@@ -1881,6 +1947,8 @@ function Handle-Api($ctx) {
       $rel = "images/uploads/$slot$ext"
       $dest = Join-Path $root ($rel -replace '/', '\')
       [IO.File]::WriteAllBytes($dest, $bytes)
+      $dest = Compress-SiteJpeg $dest 62
+      $rel = To-RelPath $dest
       if ($slot -eq "director") {
         $s = Get-Staff
         $director = @{
@@ -1981,6 +2049,10 @@ function Handle-Api($ctx) {
       $rel = "$folder/$id$ext"
       $dest = Join-Path $root ($rel -replace '/', [IO.Path]::DirectorySeparatorChar)
       [IO.File]::WriteAllBytes($dest, $bytes)
+      if ($kind -eq "photo") {
+        $dest = Compress-SiteJpeg $dest 62
+        $rel = To-RelPath $dest
+      }
       $gallery = Get-Gallery
       $item = @{
         id        = $id
@@ -2052,7 +2124,13 @@ function Send-File($ctx, $path) {
   else { $ctx.Response.ContentType = 'application/octet-stream' }
   $bytes = [IO.File]::ReadAllBytes($path)
   $ctx.Response.ContentLength64 = $bytes.Length
-  $ctx.Response.Headers.Add("Cache-Control", "no-cache")
+  if ($ext -in @(".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".ico", ".mp4", ".webm")) {
+    $ctx.Response.Headers.Add("Cache-Control", "public, max-age=604800")
+  } else {
+    $ctx.Response.Headers.Add("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+    $ctx.Response.Headers.Add("Pragma", "no-cache")
+    $ctx.Response.Headers.Add("Expires", "0")
+  }
   $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length)
   $ctx.Response.Close()
 }
@@ -2190,10 +2268,22 @@ Write-Host "Direktor / ishchi: ${publicUrl}admin.html"
 Write-Host "Sayt sozlamalari: ${publicUrl}sozlamalar.html"
 Load-AuthUsers
 
+$script:TelegramBotPolling = $true
+$adminIdCount = (Get-TelegramAdminIds).Count
+if ($adminIdCount -eq 0) {
+  Write-Host "Telegram bot: TELEGRAM_ADMIN_IDS yozilmagan. .env faylida numeric user ID qo'ying. E'lon yuborish o'chiq."
+} else {
+  Write-Host "Telegram bot: polling ishga tushdi. Admin user ID soni: $adminIdCount"
+}
+
 while ($h.IsListening) {
   $ctx = $null
   try {
-    $ctx = $h.GetContext()
+    $iar = $h.BeginGetContext($null, $null)
+    while (-not $iar.AsyncWaitHandle.WaitOne(200)) {
+      Pump-TelegramBotListener
+    }
+    $ctx = $h.EndGetContext($iar)
     if (Handle-Api $ctx) { continue }
 
     $local = $ctx.Request.Url.LocalPath.TrimStart('/')
@@ -2203,6 +2293,11 @@ while ($h.IsListening) {
     if ($blockedNames -contains $name) {
       $ctx.Response.StatusCode = 404
       $ctx.Response.Close()
+      continue
+    }
+    $norm = ($local -replace '\\', '/').TrimStart('/').ToLowerInvariant()
+    if ($norm -eq "data/staff.json" -or $norm -eq "data/rahbariyat.json") {
+      Send-Json $ctx (Staff-Public)
       continue
     }
     $path = [IO.Path]::GetFullPath((Join-Path $root ($local -replace '/', [IO.Path]::DirectorySeparatorChar)))
@@ -2232,7 +2327,7 @@ while ($h.IsListening) {
       $ctx.Response.Close()
     }
   } catch {
-    Write-Host $_.Exception.Message
+    Write-Host (Redact-TelegramSecret ([string]$_.Exception.Message))
     if ($ctx -and $ctx.Response -and $ctx.Response.OutputStream.CanWrite) {
       try {
         $ctx.Response.StatusCode = 500

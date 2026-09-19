@@ -78,6 +78,7 @@ app.get("/data/contact.json", async (_req, res) => {
   res.json(await contactPublic());
 });
 app.get("/data/staff.json", async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
   res.json(await staffPublic());
 });
 app.get("/data/district-overrides.json", async (req, res) => {
@@ -134,8 +135,14 @@ app.use(
     index: "index.html",
     fallthrough: true,
     setHeaders(res, filePath) {
-      if (filePath.endsWith(".html") || filePath.endsWith(".js") || filePath.endsWith(".css")) {
-        res.setHeader("Cache-Control", "no-cache");
+      if (
+        filePath.endsWith(".html") ||
+        filePath.endsWith(".js") ||
+        filePath.endsWith(".css") ||
+        filePath.endsWith(".json")
+      ) {
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+        res.setHeader("Pragma", "no-cache");
       }
     },
   })

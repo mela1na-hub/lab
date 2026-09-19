@@ -32,7 +32,7 @@
     announcements: [],
     chats: [],
     districts: [],
-    media: { hero: "images/bo-linma.png", building: "images/bo-linma.png", v: 1 },
+    media: { hero: "images/bo-linma.jpg", building: "images/bo-linma.jpg", v: 1 },
     gallery: [],
     contact: {
       phone: "+998 71 246-09-50",
@@ -483,6 +483,63 @@
         prev.hidden = true;
       }
     }
+    renderPublicWorkers();
+  }
+
+  function publicStaffWorkers() {
+    return asList(state.staff && state.staff.workers);
+  }
+
+  function renderPublicWorkers() {
+    const listEl = document.querySelector("[data-public-worker-list]");
+    if (!listEl) return;
+    const workers = publicStaffWorkers();
+    if (!workers.length) {
+      listEl.innerHTML = "<li class=\"muted-note\">Saytda ishchi yo‘q. Pastdan ism va lavozim qo‘shing.</li>";
+      return;
+    }
+    listEl.innerHTML = workers
+      .map(
+        (w, idx) => `
+      <li>
+        <strong>${escapeHtml(w.name)}</strong> — ${escapeHtml(w.lavozim || "Ishchi")}
+        <div class="item-actions">
+          <button type="button" data-edit-public-worker="${idx}">Tahrirlash</button>
+          <button type="button" data-remove-public-worker="${idx}">O‘chirish</button>
+        </div>
+      </li>`
+      )
+      .join("");
+    const form = document.querySelector("[data-public-worker-form]");
+    listEl.querySelectorAll("[data-edit-public-worker]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.getAttribute("data-edit-public-worker"));
+        const w = publicStaffWorkers()[i];
+        if (!w || !form) return;
+        const idInput = form.querySelector('input[name="id"]');
+        if (idInput) idInput.value = w.id || "";
+        if (form.name) form.name.value = w.name || "";
+        if (form.lavozim) form.lavozim.value = w.lavozim || "";
+        form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    });
+    listEl.querySelectorAll("[data-remove-public-worker]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const i = Number(btn.getAttribute("data-remove-public-worker"));
+        const next = publicStaffWorkers().filter((_, idx) => idx !== i);
+        try {
+          const saved = await api("/api/staff/workers", {
+            method: "POST",
+            body: JSON.stringify({ workers: next }),
+          });
+          if (saved.staff) state.staff = saved.staff;
+          else state.staff = { ...(state.staff || {}), workers: next };
+          renderPublicWorkers();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    });
   }
 
   function mergeDistricts(baseDistricts, overrides) {
@@ -700,6 +757,7 @@
     renderGallery();
     fillContactForm();
     fillStaffForm();
+    renderPublicWorkers();
     loadDistrictCatalog();
   }
 
@@ -1490,6 +1548,47 @@
         state.staff = saved.staff || state.staff;
         fillStaffForm();
         if (statusEl) statusEl.textContent = "Direktor ma’lumoti saqlandi. Bosh sahifadagi Rahbariyatda ko‘rinadi.";
+      } catch (err) {
+        if (statusEl) statusEl.textContent = err.message;
+      }
+    });
+  }
+
+  const publicWorkerForm = document.querySelector("[data-public-worker-form]");
+  if (publicWorkerForm) {
+    publicWorkerForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const fd = new FormData(publicWorkerForm);
+      const statusEl = document.querySelector("[data-public-worker-status]");
+      const worker = {
+        id: String(fd.get("id") || "").trim(),
+        name: String(fd.get("name") || "").trim(),
+        lavozim: String(fd.get("lavozim") || "").trim(),
+      };
+      if (!worker.name || !worker.lavozim) return;
+      const list = [...publicStaffWorkers()];
+      let idx = worker.id
+        ? list.findIndex((w) => w.id === worker.id)
+        : list.findIndex((w) => String(w.name || "").toLowerCase() === worker.name.toLowerCase());
+      if (idx >= 0) {
+        worker.id = list[idx].id || worker.id;
+        list[idx] = { ...list[idx], ...worker };
+      } else {
+        list.push(worker);
+      }
+      try {
+        if (statusEl) statusEl.textContent = "Saqlanmoqda...";
+        const saved = await api("/api/staff/workers", {
+          method: "POST",
+          body: JSON.stringify({ workers: list }),
+        });
+        if (saved.staff) state.staff = saved.staff;
+        else state.staff = { ...(state.staff || {}), workers: list };
+        renderPublicWorkers();
+        publicWorkerForm.reset();
+        const idInput = publicWorkerForm.querySelector('input[name="id"]');
+        if (idInput) idInput.value = "";
+        if (statusEl) statusEl.textContent = "Saqlandi. Bosh sahifadagi Rahbariyatda ko‘rinadi.";
       } catch (err) {
         if (statusEl) statusEl.textContent = err.message;
       }

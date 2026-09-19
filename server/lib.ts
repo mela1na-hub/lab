@@ -1,4 +1,7 @@
 import { query } from "./db.js";
+import fs from "node:fs";
+import path from "node:path";
+import { ROOT } from "./env.js";
 
 export function todayYmd() {
   return new Date().toISOString().slice(0, 10);
@@ -67,19 +70,99 @@ export async function publicWorkers() {
 }
 
 export async function staffPublic() {
-  const dir = await query<{ name: string; role: string; bio: string; photo: string }>(
-    `SELECT name, role, bio, photo FROM director_profile WHERE id = 1`
-  );
-  const director = dir.rows[0] || {
-    name: "Bo‘linma direktori",
-    role: "Direktor",
-    bio: "",
-    photo: "",
+  const file = readStaffFile();
+  const fileDir =
+    file.director && typeof file.director === "object"
+      ? (file.director as { name?: string; role?: string; bio?: string; photo?: string })
+      : {};
+  return {
+    director: {
+      name: String(fileDir.name || "").trim(),
+      role: String(fileDir.role || "Direktor").trim() || "Direktor",
+      bio: String(fileDir.bio || "").trim(),
+      photo: String(fileDir.photo || "").trim(),
+    },
+    workers: readStaffFileWorkers(),
   };
-  const { rows: workers } = await query<{ name: string; lavozim: string; photo: string }>(
-    `SELECT name, lavozim, photo FROM workers WHERE name <> '' ORDER BY name`
+}
+
+type StaffFileWorker = { id?: string; name?: string; lavozim?: string; photo?: string };
+
+function staffFilePath() {
+  return path.join(ROOT, "data", "staff.json");
+}
+
+function readStaffFile(): { director?: unknown; workers?: StaffFileWorker[] } {
+  try {
+    return JSON.parse(fs.readFileSync(staffFilePath(), "utf8"));
+  } catch {
+    return { workers: [] };
+  }
+}
+
+export function readStaffFileWorkers() {
+  const file = readStaffFile();
+  return (Array.isArray(file.workers) ? file.workers : [])
+    .map((w) => ({
+      id: String(w.id || "").trim(),
+      name: String(w.name || "").trim(),
+      lavozim: String(w.lavozim || "").trim(),
+      photo: String(w.photo || ""),
+    }))
+    .filter((w) => w.name);
+}
+
+export function writeStaffFileWorkers(incoming: StaffFileWorker[]) {
+  const file = readStaffFile();
+  const workers = (Array.isArray(incoming) ? incoming : [])
+    .map((w) => ({
+      id: String(w.id || "").trim() || `p${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`,
+      name: String(w.name || "").trim(),
+      lavozim: String(w.lavozim || "").trim() || "Ishchi",
+      photo: String(w.photo || ""),
+    }))
+    .filter((w) => w.name);
+  fs.mkdirSync(path.dirname(staffFilePath()), { recursive: true });
+  fs.writeFileSync(
+    staffFilePath(),
+    JSON.stringify({ ...file, workers }, null, 2),
+    "utf8"
   );
-  return { director, workers };
+  return workers;
+}
+
+export function writeStaffFileDirector(director: {
+  name: string;
+  role: string;
+  bio: string;
+  photo?: string;
+}) {
+  const file = readStaffFile();
+  const prev =
+    file.director && typeof file.director === "object"
+      ? (file.director as { photo?: string })
+      : {};
+  fs.mkdirSync(path.dirname(staffFilePath()), { recursive: true });
+  fs.writeFileSync(
+    staffFilePath(),
+    JSON.stringify(
+      {
+        director: {
+          name: String(director.name || "").trim(),
+          role: String(director.role || "Direktor").trim() || "Direktor",
+          bio: String(director.bio || "").trim(),
+          photo:
+            director.photo !== undefined
+              ? String(director.photo || "")
+              : String(prev.photo || ""),
+        },
+        workers: Array.isArray(file.workers) ? file.workers : [],
+      },
+      null,
+      2
+    ),
+    "utf8"
+  );
 }
 
 export async function contactPublic() {
@@ -102,7 +185,7 @@ export async function mediaPublic() {
   const { rows } = await query<{ hero: string; building: string; v: number }>(
     `SELECT hero, building, v FROM site_media WHERE id = 1`
   );
-  return rows[0] || { hero: "images/bo-linma.png", building: "images/bo-linma.png", v: 1 };
+  return rows[0] || { hero: "images/bo-linma.jpg", building: "images/bo-linma.jpg", v: 1 };
 }
 
 export async function galleryItems() {

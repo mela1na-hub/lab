@@ -94,7 +94,8 @@
           </div>
 
           <div class="admin-card admin-wide">
-            <h2>Ishchilar</h2>
+            <h2>Ishchilar (kirish va Telegram)</h2>
+            <p class="muted-note">Bu ro‘yxat faqat e’lon, login va bot uchun. Bosh sahifadagi Rahbariyatda chiqmaydi.</p>
             <form class="stack-form" data-worker-form>
               <input type="hidden" name="id" />
               <label>
@@ -145,7 +146,7 @@
           <div class="admin-card admin-wide">
             <h2>Bosh sahifa rasmi</h2>
             <p class="muted-note">Hero fon rasmini almashtirish. PNG, JPG, WEBP — max 8 MB.</p>
-            <img class="media-preview" data-preview-hero src="images/bo-linma.png" alt="Bosh sahifa rasmi" />
+            <img class="media-preview" data-preview-hero src="images/bo-linma.jpg" alt="Bosh sahifa rasmi" />
             <form class="stack-form" data-hero-form>
               <label>
                 Yangi rasm
@@ -235,7 +236,7 @@
 
           <div class="admin-card admin-wide">
             <h2>Rahbariyat — direktor</h2>
-            <p class="muted-note">Direktor ma’lumoti bosh sahifadagi Rahbariyat bo‘limida ko‘rinadi. Ishchilar yuqoridagi ro‘yxatdan olinadi.</p>
+            <p class="muted-note">Direktor ma’lumoti bosh sahifadagi Rahbariyat bo‘limida ko‘rinadi.</p>
             <img class="media-preview" data-preview-director alt="Direktor rasmi" hidden />
             <form class="stack-form" data-staff-form>
               <label>
@@ -261,6 +262,28 @@
               <button class="btn btn-ghost" type="submit">Rasmni saqlash</button>
               <p class="form-note" data-director-photo-status></p>
             </form>
+            <p class="admin-actions">
+              <a class="btn btn-ghost" href="index.html#rahbariyat">Saytda ko‘rish</a>
+            </p>
+          </div>
+
+          <div class="admin-card admin-wide">
+            <h2>Saytdagi ishchilar</h2>
+            <p class="muted-note">Bosh sahifada faqat shu yerdan qo‘shgan ishchilar chiqadi. Bo‘sh qoldirsangiz, ishchi kartochkalari ko‘rinmaydi.</p>
+            <form class="stack-form" data-public-worker-form>
+              <input type="hidden" name="id" />
+              <label>
+                Ism
+                <input type="text" name="name" required />
+              </label>
+              <label>
+                Lavozim
+                <input type="text" name="lavozim" required />
+              </label>
+              <button class="btn btn-primary" type="submit">Saytga qo‘shish</button>
+              <p class="form-note" data-public-worker-status></p>
+            </form>
+            <ul class="admin-list" data-public-worker-list></ul>
             <p class="admin-actions">
               <a class="btn btn-ghost" href="index.html#rahbariyat">Saytda ko‘rish</a>
             </p>
