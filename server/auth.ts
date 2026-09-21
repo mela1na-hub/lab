@@ -59,7 +59,7 @@ export async function destroySession(sid: string) {
 
 export async function destroyRoleSessions(role: Role) {
   await query(
-    `DELETE FROM sessions s USING users u WHERE s.user_id = u.id AND u.role = $1`,
+    `DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE role = $1)`,
     [role]
   );
 }

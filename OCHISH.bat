@@ -2,7 +2,7 @@
 cd /d "%~dp0"
 if not exist ".env" (
   copy /Y ".env.example" ".env" >nul
-  echo Created .env from .env.example. Set DATABASE_URL and SESSION_SECRET, then run OCHISH.bat again.
+  echo Created .env from .env.example. Set SESSION_SECRET, then run OCHISH.bat again.
   pause
   exit /b 1
 )
@@ -21,5 +21,5 @@ timeout /t 4 /nobreak >nul
 start "" "http://127.0.0.1:3000/"
 echo.
 echo Site: http://127.0.0.1:3000/
-echo Postgres must be running. See docs/DEPLOY.md
+echo SQLite file: data\app.sqlite. See docs/DEPLOY.md
 echo.

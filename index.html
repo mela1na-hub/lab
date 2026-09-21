@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=23" />
+  <link rel="stylesheet" href="styles.css?v=20260920f" />
 </head>
 <body>
   <header class="site-header">
@@ -47,16 +47,19 @@
           width="1200"
           height="1600"
         />
+        <span class="hero-dust"></span>
+        <span class="hero-dust hero-dust-2"></span>
+        <span class="hero-dust hero-dust-3"></span>
       </div>
       <div class="hero-scrim"></div>
       <div class="hero-content">
-        <p class="hero-brand" data-i18n="brand.institute">Tuproqshunoslik va agrokimyoviy tadqiqotlar instituti</p>
-        <h1 data-i18n="hero.h1">Viloyat tuproq tahlili — laborator aniqlik bilan</h1>
-        <p class="hero-lead" data-i18n="hero.lead">
+        <p class="hero-brand hero-in" data-i18n="brand.institute">Tuproqshunoslik va agrokimyoviy tadqiqotlar instituti</p>
+        <h1 class="hero-in" data-i18n="hero.h1">Viloyat tuproq tahlili — laborator aniqlik bilan</h1>
+        <p class="hero-lead hero-in" data-i18n="hero.lead">
           Qashqadaryo shahar va tumanlaridan olingan namunalarni agrokimyoviy va mexanik tahlil qilamiz,
           amaliy tavsiyalar tayyorlaymiz.
         </p>
-        <div class="hero-actions">
+        <div class="hero-actions hero-in">
           <a class="btn btn-primary" href="hisobotlar.html" data-i18n="nav.reports">Hisobotlar</a>
           <a class="btn btn-ghost" href="#aloqa" data-i18n="hero.contact">Bog‘lanish</a>
         </div>
@@ -81,19 +84,19 @@
         <h2 data-i18n="services.h2">Laboratoriya xizmatlari</h2>
         <p class="section-intro" data-i18n="services.intro">Asosiy tahlil yo‘nalishlari — dala va laborator natijalar asosida.</p>
         <ul class="service-list">
-          <li>
+          <li data-reveal>
             <h3 data-i18n="services.agro.h">Agrokimyoviy tahlil</h3>
             <p data-i18n="services.agro.p">N-P-K, pH, organik modda va ozuqa rejimini baholash.</p>
           </li>
-          <li>
+          <li data-reveal>
             <h3 data-i18n="services.grain.h">Granulometrik tarkib</h3>
             <p data-i18n="services.grain.p">Qum, chang va loy ulushlari; USCS klassifikatsiyasi.</p>
           </li>
-          <li>
+          <li data-reveal>
             <h3 data-i18n="services.proctor.h">Proctor va CBR</h3>
             <p data-i18n="services.proctor.p">Optimal namlik, maksimal zichlik va yuk ko‘tarish ko‘rsatkichlari.</p>
           </li>
-          <li>
+          <li data-reveal>
             <h3 data-i18n="services.report.h">Hisobot va tavsiyalar</h3>
             <p data-i18n="services.report.p">Tuman/shahar kesimida laborator hisobotlar va amaliy yo‘riqnoma.</p>
           </li>
@@ -120,7 +123,7 @@
     <section id="rahbariyat" class="section">
       <div class="container">
         <p class="eyebrow" data-i18n="staff.eyebrow">Rahbariyat</p>
-        <h2 data-i18n="staff.h2">Direktor va ishchilar</h2>
+        <h2 data-i18n="staff.h2">Direktor</h2>
         <div class="staff-grid" data-staff-grid>
           <p class="muted-note" data-i18n="staff.loading">Yuklanmoqda...</p>
         </div>
@@ -133,7 +136,7 @@
         <h2 data-i18n="videos.h2">O‘quv materiallari</h2>
         <p class="section-intro" data-i18n="videos.intro">Tuproqshunoslik va agrokimyo bo‘yicha tanlangan videolar.</p>
         <div class="video-grid">
-          <figure class="video-card">
+          <figure class="video-card" data-reveal>
             <div class="video-frame">
               <iframe
                 src="https://www.youtube.com/embed/amt-sPIbgK0"
@@ -150,7 +153,7 @@
               <span data-i18n="videos.soilNote">Tuproq shakllanishi va qatlamlari</span>
             </figcaption>
           </figure>
-          <figure class="video-card">
+          <figure class="video-card" data-reveal>
             <div class="video-frame">
               <iframe
                 src="https://www.youtube.com/embed/9-dicqNoODg"
@@ -167,7 +170,7 @@
               <span data-i18n="videos.rootsNote">Ildizdan barggacha suv va ozuqa</span>
             </figcaption>
           </figure>
-          <figure class="video-card">
+          <figure class="video-card" data-reveal>
             <div class="video-frame">
               <iframe
                 src="https://www.youtube.com/embed/leHy-Y_8nRs"
@@ -198,15 +201,15 @@
           <span data-i18n="contact.intro2"> to‘ldiring.</span>
         </p>
         <ul class="contact-cards">
-          <li>
+          <li data-reveal>
             <p class="contact-label" data-i18n="contact.phone">Telefon</p>
             <a data-contact="phone" href="tel:+998712460950">+998 71 246-09-50</a>
           </li>
-          <li>
+          <li data-reveal>
             <p class="contact-label" data-i18n="contact.email">Email</p>
             <a data-contact="email" href="mailto:info@soil.uz">info@soil.uz</a>
           </li>
-          <li>
+          <li data-reveal>
             <p class="contact-label" data-i18n="contact.address">Manzil</p>
             <p data-contact="address">Qarshi, Ravoq MFY, Islom Karimov ko‘chasi, 62-uy</p>
             <a href="#manzil" data-i18n="contact.mapSee">Xaritada ko‘rish</a>
@@ -244,7 +247,7 @@
         <p class="eyebrow" data-i18n="appeal.eyebrow">Murojaat</p>
         <h2 data-i18n="appeal.h2">Murojaat qoldiring</h2>
         <p class="section-intro" data-i18n="appeal.intro">Savol yoki buyurtma uchun formani to‘ldiring.</p>
-        <form class="contact-form" data-contact-form>
+        <form class="contact-form" data-contact-form method="post" action="/api/appeal">
           <label>
             <span data-i18n="appeal.name">Ism</span>
             <input type="text" name="name" required autocomplete="name" />
@@ -281,8 +284,8 @@
     </div>
   </footer>
 
-  <script src="i18n.js?v=3"></script>
-  <script src="site.js?v=17"></script>
-  <script src="gallery.js?v=13"></script>
+  <script src="i18n.js?v=20260920"></script>
+  <script src="site.js?v=20260920f"></script>
+  <script src="gallery.js?v=14"></script>
 </body>
 </html>

@@ -55,6 +55,7 @@
   let apiReady = false;
   let districtCatalog = [];
   let editingDistrict = null;
+  let appeals = [];
 
   function readJson(key, fallback) {
     try {
@@ -343,12 +344,17 @@
       .map((c) => {
         const user = c.username ? `@${c.username}` : "";
         const id = String(c.id || c.chat_id || "");
+        const can = Boolean(c.canAnnounce);
         return `<li>
-          <strong>${escapeHtml(c.name || "Foydalanuvchi")}</strong> ${escapeHtml(user)}<br />
+          <strong>${escapeHtml(c.name || "Foydalanuvchi")}</strong> ${escapeHtml(user)}
+          ${can ? '<span class="muted-note"> · e’lon yubora oladi</span>' : ""}<br />
           chat_id: <code>${escapeHtml(id)}</code>
           <div class="item-actions">
             <button type="button" data-copy-chat="${escapeHtml(id)}">Nusxa</button>
             <button type="button" data-test-chat="${escapeHtml(id)}">Test yuborish</button>
+            <button type="button" data-announce-chat="${escapeHtml(id)}" data-announce-on="${can ? "1" : "0"}">${
+              can ? "E’lonni o‘chirish" : "E’lon yubora oladi"
+            }</button>
             <button type="button" data-remove-chat="${escapeHtml(id)}">O‘chirish</button>
           </div>
         </li>`;
@@ -377,6 +383,29 @@
             body: JSON.stringify({ chat_id: btn.getAttribute("data-test-chat") }),
           });
           if (statusEl) statusEl.textContent = "Test xabar yuborildi. Telegramni tekshiring.";
+        } catch (err) {
+          if (statusEl) statusEl.textContent = err.message;
+        }
+      });
+    });
+
+    listEl.querySelectorAll("[data-announce-chat]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-announce-chat");
+        const enabled = btn.getAttribute("data-announce-on") !== "1";
+        const statusEl = document.querySelector("[data-token-status]");
+        try {
+          const data = await api("/api/telegram/chats/announce", {
+            method: "POST",
+            body: JSON.stringify({ chat_id: id, enabled }),
+          });
+          state.chats = asList(data.chats);
+          renderChats();
+          if (statusEl) {
+            statusEl.textContent = enabled
+              ? "Shu chat botga yozsa, e’lon hammaga ketadi."
+              : "Bu chat endi e’lon yubora olmaydi.";
+          }
         } catch (err) {
           if (statusEl) statusEl.textContent = err.message;
         }
@@ -596,6 +625,8 @@
       }
     }
     if (!listEl) return;
+    const canDelete = (getSession() || {}).role === "admin";
+    const canEdit = Boolean(document.querySelector("[data-district-form]"));
     if (!districtCatalog.length) {
       listEl.innerHTML = '<li class="muted-note">Hisobot yo‘q.</li>';
       return;
@@ -605,13 +636,16 @@
         const file = d.file
           ? `<div class="muted-note">Fayl: ${escapeHtml(d.file)}</div>`
           : '<div class="muted-note">Fayl yo‘q</div>';
+        const editBtn = canEdit
+          ? `<button type="button" data-edit-district="${escapeHtml(d.id)}">Tahrirlash</button>`
+          : "";
+        const delBtn = canDelete
+          ? `<button type="button" data-remove-district="${escapeHtml(d.id)}">O‘chirish</button>`
+          : "";
         return `<li>
           <strong>${escapeHtml(d.name || d.id)}</strong> — ${escapeHtml(d.date || "")}
           ${file}
-          <div class="item-actions">
-            <button type="button" data-edit-district="${escapeHtml(d.id)}">Tahrirlash</button>
-            <button type="button" data-remove-district="${escapeHtml(d.id)}">O‘chirish</button>
-          </div>
+          <div class="item-actions">${editBtn}${delBtn}</div>
         </li>`;
       })
       .join("");
@@ -701,11 +735,151 @@
     fillContactForm();
     fillStaffForm();
     loadDistrictCatalog();
+    loadAppeals();
+  }
+
+  function formatWhen(raw) {
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return String(raw || "");
+    return d.toLocaleString("uz-UZ", {
+      timeZone: "Asia/Tashkent",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  function appealStatusLabel(status) {
+    if (status === "done") return "Bajarilgan";
+    if (status === "read") return "O‘qilgan";
+    return "Yangi";
+  }
+
+  function updateAppealsNav() {
+    const navBtn = document.querySelector('[data-admin-nav="appeals"]');
+    if (!navBtn) return;
+    const unread = appeals.filter((a) => a.status === "new").length;
+    navBtn.textContent = unread ? `Murojaatlar (${unread})` : "Murojaatlar";
+  }
+
+  function renderAppeals() {
+    const list = document.querySelector("[data-appeal-list]");
+    if (!list) return;
+    updateAppealsNav();
+    if (!appeals.length) {
+      list.innerHTML = '<li class="muted-note">Hozircha murojaat yo‘q.</li>';
+      return;
+    }
+    list.innerHTML = appeals
+      .map((a) => {
+        const st = a.status || "new";
+        const next =
+          st === "new"
+            ? `<button type="button" data-appeal-status="read" data-id="${escapeHtml(a.id)}">O‘qildi</button>`
+            : st === "read"
+              ? `<button type="button" data-appeal-status="done" data-id="${escapeHtml(a.id)}">Bajarildi</button>`
+              : "";
+        return `<li class="${st === "new" ? "is-new" : ""}">
+        <p><strong>${escapeHtml(a.name)}</strong> · ${escapeHtml(appealStatusLabel(st))}</p>
+        <p class="appeal-meta">${escapeHtml(a.contact)} · ${escapeHtml(formatWhen(a.created_at))}</p>
+        <p class="appeal-msg">${escapeHtml(a.message)}</p>
+        <div class="item-actions">
+          ${next}
+          <button type="button" data-appeal-delete data-id="${escapeHtml(a.id)}">O‘chirish</button>
+        </div>
+      </li>`;
+      })
+      .join("");
+  }
+
+  async function loadAppeals() {
+    const list = document.querySelector("[data-appeal-list]");
+    if (!list) return;
+    const statusEl = document.querySelector("[data-appeals-status]");
+    try {
+      const data = await api("/api/appeals");
+      appeals = Array.isArray(data.appeals) ? data.appeals : [];
+      if (statusEl) statusEl.textContent = "";
+      renderAppeals();
+    } catch (err) {
+      if (statusEl) statusEl.textContent = err.message;
+    }
   }
 
   let currentTab = "daily";
   let dailyRoster = [];
   let dailyToday = "";
+  let dailyVideos = [];
+
+  function renderDailyVideos(videos) {
+    dailyVideos = Array.isArray(videos) ? videos.filter(Boolean) : [];
+    const box = document.querySelector("[data-daily-video-list]");
+    if (!box) return;
+    if (!dailyVideos.length) {
+      box.innerHTML = "";
+      return;
+    }
+    box.innerHTML = dailyVideos
+      .map(
+        (src) => `<div class="daily-video-item">
+          <video src="${escapeHtml(src)}" controls preload="metadata"></video>
+          <div class="item-actions">
+            <button type="button" data-daily-video-del="${escapeHtml(src)}">Videoni o‘chirish</button>
+          </div>
+        </div>`
+      )
+      .join("");
+    box.querySelectorAll("[data-daily-video-del]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const path = btn.getAttribute("data-daily-video-del");
+        if (!path || !confirm("Videoni o‘chirasizmi?")) return;
+        try {
+          const saved = await api("/api/daily/video/delete", {
+            method: "POST",
+            body: JSON.stringify({ date: dailyToday, path }),
+          });
+          renderDailyVideos(saved.videos);
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    });
+  }
+
+  async function uploadDailyVideo(file) {
+    if (!file) return;
+    const statusEl = document.querySelector("[data-daily-status]");
+    const session = getSession() || {};
+    if (!session.workerId) {
+      if (statusEl) statusEl.textContent = "Avval ismingizni tanlang.";
+      return;
+    }
+    try {
+      if (statusEl) statusEl.textContent = "Video yuklanmoqda...";
+      const params = new URLSearchParams({
+        date: dailyToday,
+        workerId: session.workerId,
+        filename: file.name || "video.mp4",
+      });
+      const res = await fetch(`/api/daily/video?${params.toString()}`, {
+        method: "POST",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      const saved = await res.json().catch(() => ({}));
+      if (!res.ok || saved.ok === false) {
+        throw new Error(saved.error || `Server xatosi (${res.status})`);
+      }
+      renderDailyVideos(saved.videos);
+      if (statusEl) statusEl.textContent = "Video qo‘shildi.";
+    } catch (err) {
+      if (statusEl) statusEl.textContent = err.message;
+    }
+  }
 
   function hideWorkPanels() {
     if (directorWork) directorWork.hidden = true;
@@ -713,6 +887,62 @@
     if (workerView) workerView.hidden = true;
     if (dailyDirector) dailyDirector.hidden = true;
     if (dailyWorkerPanel) dailyWorkerPanel.hidden = true;
+  }
+
+  function setPaneTitle(text) {
+    const titleEl = document.querySelector("[data-admin-pane-title]");
+    if (titleEl && text) titleEl.textContent = text;
+  }
+
+  function closeAdminNav() {
+    document.body.classList.remove("admin-nav-open");
+  }
+
+  function showSitePane(id) {
+    const nav = document.querySelector("[data-admin-nav-list]");
+    if (!nav) return;
+    const buttons = [...nav.querySelectorAll("[data-admin-nav]")];
+    const panes = document.querySelectorAll("[data-admin-pane]");
+    const next = buttons.some((b) => b.getAttribute("data-admin-nav") === id)
+      ? id
+      : buttons[0]?.getAttribute("data-admin-nav") || "passwords";
+    buttons.forEach((btn) => {
+      btn.classList.toggle("is-active", btn.getAttribute("data-admin-nav") === next);
+    });
+    panes.forEach((pane) => {
+      pane.hidden = pane.getAttribute("data-admin-pane") !== next;
+      pane.classList.toggle("is-active", pane.getAttribute("data-admin-pane") === next);
+    });
+    const active = buttons.find((btn) => btn.getAttribute("data-admin-nav") === next);
+    setPaneTitle(active?.textContent.trim() || "");
+    closeAdminNav();
+    try {
+      localStorage.setItem("ttati_admin_pane", next);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  let siteNavBound = false;
+
+  function bindSiteNav() {
+    const nav = document.querySelector("[data-admin-nav-list]");
+    if (!nav) return;
+    if (!siteNavBound) {
+      nav.querySelectorAll("[data-admin-nav]").forEach((btn) => {
+        btn.addEventListener("click", () => showSitePane(btn.getAttribute("data-admin-nav")));
+      });
+      siteNavBound = true;
+    }
+    let start = "appeals";
+    try {
+      start = localStorage.getItem("ttati_admin_pane") || start;
+    } catch {
+      /* ignore */
+    }
+    const hash = (location.hash || "").replace(/^#/, "");
+    if (hash && nav.querySelector(`[data-admin-nav="${hash}"]`)) start = hash;
+    showSitePane(start);
   }
 
   function showTab(name) {
@@ -724,8 +954,10 @@
     if (adminTabs) {
       adminTabs.querySelectorAll("[data-tab]").forEach((btn) => {
         btn.classList.toggle("is-active", btn.getAttribute("data-tab") === name);
+        if (btn.getAttribute("data-tab") === name) setPaneTitle(btn.textContent.trim());
       });
     }
+    closeAdminNav();
     if (name === "daily") {
       if (isDirector && dailyDirector) dailyDirector.hidden = false;
       if (isWorker && dailyWorkerPanel) dailyWorkerPanel.hidden = false;
@@ -825,20 +1057,18 @@
     if (identityForm && session.username !== "ishchi") identityForm.hidden = true;
     else if (identityForm && session.workerId) identityForm.hidden = true;
     const todayEl = document.querySelector("[data-daily-today]");
+    const existsNote = document.querySelector("[data-daily-exists-note]");
+    const deleteBtn = document.querySelector("[data-daily-delete]");
+    const saveBtn = document.querySelector("[data-daily-save]") || dailyForm.querySelector("button[type='submit']");
     const calLink = document.querySelector("[data-own-calendar]");
     if (calLink) calLink.href = "kunlik.html";
     const area = dailyForm.querySelector("textarea");
-    const submitBtn = dailyForm.querySelector("button[type='submit']");
     const now = new Date();
-    const rest = now.getDay() === 0 || now.getDay() === 6;
-    if (rest) {
-      if (todayEl) todayEl.textContent = "Bugun dam olish kuni. Hisobot yozilmaydi.";
-      if (area) area.disabled = true;
-      if (submitBtn) submitBtn.hidden = true;
-      return;
+    if (area) {
+      area.disabled = false;
+      area.removeAttribute("readonly");
     }
-    if (area) area.disabled = false;
-    if (submitBtn) submitBtn.hidden = false;
+    if (saveBtn) saveBtn.hidden = false;
     try {
       const data = await api(
         `/api/daily/logs?workerId=${encodeURIComponent(session.workerId)}&year=${now.getFullYear()}&month=${now.getMonth() + 1}`
@@ -846,9 +1076,17 @@
       dailyToday = data.today || dailyToday;
       if (todayEl) todayEl.textContent = `Sana: ${dailyToday}`;
       const found = asList(data.logs).find((item) => item.date === dailyToday);
+      const hasReport = Boolean(found && (String(found.text || "").trim() || (found.videos && found.videos.length)));
       if (area) area.value = found ? found.text : "";
+      renderDailyVideos(found && found.videos ? found.videos : []);
+      if (existsNote) existsNote.hidden = !hasReport;
+      if (deleteBtn) deleteBtn.hidden = !hasReport;
+      if (saveBtn) saveBtn.textContent = hasReport ? "Qayta saqlash" : "Hisobotni saqlash";
     } catch {
       if (todayEl) todayEl.textContent = dailyToday ? `Sana: ${dailyToday}` : "";
+      if (existsNote) existsNote.hidden = true;
+      if (deleteBtn) deleteBtn.hidden = true;
+      if (saveBtn) saveBtn.textContent = "Hisobotni saqlash";
     }
   }
 
@@ -914,6 +1152,7 @@
     if (workerReportsNote) workerReportsNote.hidden = !isWorker;
 
     if (isAdmin) {
+      bindSiteNav();
       renderAll();
       return;
     }
@@ -1320,6 +1559,45 @@
     });
   }
 
+  const appealsRefresh = document.querySelector("[data-appeals-refresh]");
+  if (appealsRefresh) {
+    appealsRefresh.addEventListener("click", () => {
+      loadAppeals();
+    });
+  }
+
+  const appealList = document.querySelector("[data-appeal-list]");
+  if (appealList) {
+    appealList.addEventListener("click", async (event) => {
+      const statusBtn = event.target.closest("[data-appeal-status]");
+      const deleteBtn = event.target.closest("[data-appeal-delete]");
+      const statusEl = document.querySelector("[data-appeals-status]");
+      try {
+        if (statusBtn) {
+          const saved = await api("/api/appeals/status", {
+            method: "POST",
+            body: JSON.stringify({
+              id: statusBtn.getAttribute("data-id"),
+              status: statusBtn.getAttribute("data-appeal-status"),
+            }),
+          });
+          appeals = Array.isArray(saved.appeals) ? saved.appeals : appeals;
+          renderAppeals();
+        } else if (deleteBtn) {
+          if (!confirm("Bu murojaatni o‘chirasizmi?")) return;
+          const saved = await api("/api/appeals/delete", {
+            method: "POST",
+            body: JSON.stringify({ id: deleteBtn.getAttribute("data-id") }),
+          });
+          appeals = Array.isArray(saved.appeals) ? saved.appeals : appeals;
+          renderAppeals();
+        }
+      } catch (err) {
+        if (statusEl) statusEl.textContent = err.message;
+      }
+    });
+  }
+
   const contactAdminForm = document.querySelector("[data-contact-admin-form]");
   if (contactAdminForm) {
     contactAdminForm.addEventListener("submit", async (event) => {
@@ -1578,6 +1856,13 @@
     });
   }
 
+  const navToggle = document.querySelector("[data-admin-nav-toggle]");
+  if (navToggle) {
+    navToggle.addEventListener("click", () => {
+      document.body.classList.toggle("admin-nav-open");
+    });
+  }
+
   if (adminTabs) {
     adminTabs.querySelectorAll("[data-tab]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -1593,7 +1878,6 @@
       const fd = new FormData(identityForm);
       const workerId = String(fd.get("workerId") || "").trim();
       const name = String(fd.get("name") || "").trim();
-      const lavozim = String(fd.get("lavozim") || "").trim();
       const statusEl = document.querySelector("[data-identity-status]");
       if (!workerId && !name) {
         if (statusEl) statusEl.textContent = "Ismingizni tanlang yoki yozing.";
@@ -1603,7 +1887,7 @@
         if (statusEl) statusEl.textContent = "";
         const saved = await api("/api/daily/identity", {
           method: "POST",
-          body: JSON.stringify({ workerId, name, lavozim }),
+          body: JSON.stringify({ workerId, name }),
         });
         const session = getSession() || {};
         session.workerId = saved.workerId;
@@ -1667,12 +1951,32 @@
     });
   }
 
+  function bindDailyVideoInputs() {
+    [
+      document.querySelector("[data-daily-video-file]"),
+      document.querySelector("[data-daily-video-cam]"),
+    ].forEach((input) => {
+      if (!input || input.dataset.bound === "1") return;
+      input.dataset.bound = "1";
+      input.addEventListener("change", async () => {
+        const file = input.files && input.files[0];
+        input.value = "";
+        if (file) await uploadDailyVideo(file);
+      });
+    });
+  }
+  bindDailyVideoInputs();
+
   if (dailyForm) {
     dailyForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const statusEl = document.querySelector("[data-daily-status]");
       const text = String(new FormData(dailyForm).get("text") || "").trim();
       const session = getSession() || {};
+      if (!text && !dailyVideos.length) {
+        if (statusEl) statusEl.textContent = "Matn yozing yoki video qo‘shing.";
+        return;
+      }
       try {
         if (statusEl) statusEl.textContent = "Saqlanmoqda...";
         await api("/api/daily/logs", {
@@ -1681,9 +1985,47 @@
             workerId: session.workerId,
             date: dailyToday,
             text,
+            videos: dailyVideos,
           }),
         });
-        if (statusEl) statusEl.textContent = "Bugungi hisobot saqlandi.";
+        if (statusEl) statusEl.textContent = "Hisobot saqlandi. Xato bo‘lsa yana tuzatib saqlashingiz mumkin.";
+        const existsNote = document.querySelector("[data-daily-exists-note]");
+        const deleteBtn = document.querySelector("[data-daily-delete]");
+        const saveBtn = document.querySelector("[data-daily-save]");
+        if (existsNote) existsNote.hidden = false;
+        if (deleteBtn) deleteBtn.hidden = false;
+        if (saveBtn) saveBtn.textContent = "Qayta saqlash";
+      } catch (err) {
+        if (statusEl) statusEl.textContent = err.message;
+      }
+    });
+  }
+
+  const dailyDeleteBtn = document.querySelector("[data-daily-delete]");
+  if (dailyDeleteBtn) {
+    dailyDeleteBtn.addEventListener("click", async () => {
+      const statusEl = document.querySelector("[data-daily-status]");
+      const session = getSession() || {};
+      if (!dailyToday || !session.workerId) return;
+      if (!confirm("Bugungi hisobotni butunlay o‘chirasizmi? Matn va videolar ham o‘chadi.")) return;
+      try {
+        if (statusEl) statusEl.textContent = "O‘chirilmoqda...";
+        await api("/api/daily/logs/delete", {
+          method: "POST",
+          body: JSON.stringify({
+            workerId: session.workerId,
+            date: dailyToday,
+          }),
+        });
+        const area = dailyForm?.querySelector("textarea");
+        if (area) area.value = "";
+        renderDailyVideos([]);
+        const existsNote = document.querySelector("[data-daily-exists-note]");
+        const saveBtn = document.querySelector("[data-daily-save]");
+        if (existsNote) existsNote.hidden = true;
+        dailyDeleteBtn.hidden = true;
+        if (saveBtn) saveBtn.textContent = "Hisobotni saqlash";
+        if (statusEl) statusEl.textContent = "Hisobot o‘chirildi. Kerak bo‘lsa yangisini yozing.";
       } catch (err) {
         if (statusEl) statusEl.textContent = err.message;
       }

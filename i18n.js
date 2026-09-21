@@ -62,7 +62,7 @@
         "Galereyani yuklab bo‘lmadi. Saytni OCHISH.bat orqali oching.",
       "gallery.item": "Material",
       "staff.eyebrow": "Rahbariyat",
-      "staff.h2": "Direktor va ishchilar",
+      "staff.h2": "Direktor",
       "staff.loading": "Yuklanmoqda...",
       "staff.missing":
         "Ma’lumot topilmadi. Saytni OCHISH.bat orqali oching.",
@@ -110,8 +110,10 @@
       "appeal.contact": "Telefon yoki email",
       "appeal.message": "Xabar",
       "appeal.send": "Yuborish",
+      "appeal.sending": "Yuborilmoqda...",
+      "appeal.error": "Yuborilmadi. Qayta urinib ko‘ring.",
       "appeal.thanks":
-        "Rahmat. Murojaatingiz qabul qilindi (demo: serverga yuborilmaydi). Telefon yoki email orqali bog‘lanamiz.",
+        "Rahmat. Murojaatingiz qabul qilindi. Tez orada telefon yoki email orqali bog‘lanamiz.",
       "footer.copy": "Barcha huquqlar himoyalangan.",
       "lang.label": "Til",
       "auth.login": "Login",
@@ -212,7 +214,7 @@
         "Не удалось загрузить галерею. Откройте сайт через OCHISH.bat.",
       "gallery.item": "Материал",
       "staff.eyebrow": "Руководство",
-      "staff.h2": "Директор и сотрудники",
+      "staff.h2": "Директор",
       "staff.loading": "Загрузка...",
       "staff.missing":
         "Данные не найдены. Откройте сайт через OCHISH.bat.",
@@ -260,8 +262,10 @@
       "appeal.contact": "Телефон или email",
       "appeal.message": "Сообщение",
       "appeal.send": "Отправить",
+      "appeal.sending": "Отправка...",
+      "appeal.error": "Не удалось отправить. Попробуйте ещё раз.",
       "appeal.thanks":
-        "Спасибо. Обращение принято (демо: на сервер не отправляется). Свяжемся по телефону или email.",
+        "Спасибо. Обращение принято. Свяжемся по телефону или email.",
       "footer.copy": "Все права защищены.",
       "lang.label": "Язык",
       "auth.login": "Логин",
@@ -363,7 +367,7 @@
         "Could not load the gallery. Open the site with OCHISH.bat.",
       "gallery.item": "Item",
       "staff.eyebrow": "Leadership",
-      "staff.h2": "Director and staff",
+      "staff.h2": "Director",
       "staff.loading": "Loading...",
       "staff.missing":
         "Data not found. Open the site with OCHISH.bat.",
@@ -410,8 +414,10 @@
       "appeal.contact": "Phone or email",
       "appeal.message": "Message",
       "appeal.send": "Send",
+      "appeal.sending": "Sending...",
+      "appeal.error": "Could not send. Please try again.",
       "appeal.thanks":
-        "Thank you. Your inquiry was received (demo: it is not sent to a server). We will contact you by phone or email.",
+        "Thank you. Your inquiry was received. We will contact you by phone or email.",
       "footer.copy": "All rights reserved.",
       "lang.label": "Language",
       "auth.login": "Username",

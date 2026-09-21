@@ -1,15 +1,8 @@
 # Production deployment — Qashqadaryo Soil Lab
 
-The public site is the same HTML/CSS/JS. The PowerShell listener is **not** production. Use Node.js + PostgreSQL.
+The public site is the same HTML/CSS/JS. The PowerShell listener is **not** production. Use Node.js + SQLite.
 
-## Compromised secrets (rotate now)
-
-A Telegram bot token and the demo passwords `admin123` / `director123` / `ishchi123` were stored in plaintext on this machine and in older git history of `serve.ps1`.
-
-Treat them as **compromised**:
-
-1. In Telegram BotFather, revoke/replace the bot token. Paste the **new** token only in Sozlamalar or `TELEGRAM_BOT_TOKEN`. Do not commit it.
-2. Do not reuse the old demo passwords. First start prints generated passwords if `INITIAL_*` is empty; save them.
+Default logins: `admin` / `admin123`, `director` / `director123`, `ishchi` / `ishchi123`. Ishchi akkauntlari uchun ham id = ism, parol = `ism123`.
 
 ## Architecture
 
@@ -17,7 +10,7 @@ Treat them as **compromised**:
 | --- | --- |
 | Frontend | Existing HTML/CSS/JS, served by Node (or later Vercel with API rewrites) |
 | Backend | Node.js / TypeScript (`server/`) |
-| Database | PostgreSQL (`sql/001_init.sql`) — local Docker or Supabase |
+| Database | SQLite (`data/app.sqlite`, schema in `sql/001_init.sql`) |
 | Files | Disk next to the app (`images/`, `media/`, `files/reports/`) or a persistent volume |
 | Process | `npm start` on Railway, Render, Fly.io, or a VPS with nginx + Let's Encrypt |
 
@@ -25,12 +18,11 @@ Vercel **alone** cannot run this API. Pair Vercel (static) with a Node host, or 
 
 ## Local run
 
-1. Install Node.js 20+ and Docker (or a PostgreSQL database).
-2. `docker compose up -d`
-3. Copy `.env.example` to `.env`. Set `SESSION_SECRET` (32+ random chars) and `INITIAL_*` passwords (12+ chars) **or** let seed generate them once.
-4. `npm install`
-5. `npm start`
-6. Open the URL in `PUBLIC_URL` (default http://127.0.0.1:3000/).
+1. Install Node.js 20+.
+2. Copy `.env.example` to `.env`. Set `SESSION_SECRET` (32+ random chars).
+3. `npm install`
+4. `npm start`
+5. Open the URL in `PUBLIC_URL` (default http://127.0.0.1:3000/). SQLite file is created at `data/app.sqlite`.
 
 `OCHISH.bat` starts `npm start`.
 
@@ -105,11 +97,10 @@ Frontend still calls the same `/api/...` paths with `credentials: "same-origin"`
 
 ## Hosting steps
 
-1. Create a PostgreSQL database (Supabase or Railway Postgres). Copy `DATABASE_URL`.
-2. Create a Node service (Railway/Render/Fly/VPS). Set env from `.env.example`. `NODE_ENV=production`, `COOKIE_SECURE=true`, `TRUST_PROXY=true`, `PUBLIC_URL=https://your-domain`.
-3. Attach a persistent volume for `images/`, `media/`, `files/`.
-4. Point the domain to the service. Terminate TLS at the platform or nginx. Redirect HTTP → HTTPS.
-5. Start command: `npm install && npm start`
-6. Confirm `/api/health` returns `{"ok":true}` and login works on a phone using mobile data.
+1. Create a Node service (Railway/Render/Fly/VPS). Set env from `.env.example`. `NODE_ENV=production`, `COOKIE_SECURE=true`, `TRUST_PROXY=true`, `PUBLIC_URL=https://your-domain`.
+2. Attach a persistent volume for `data/app.sqlite`, `images/`, `media/`, `files/`.
+3. Point the domain to the service. Terminate TLS at the platform or nginx. Redirect HTTP → HTTPS.
+4. Start command: `npm install && npm start`
+5. Confirm `/api/health` returns `{"ok":true}` and login works on a phone using mobile data.
 
 Optional: put HTML on Vercel and rewrite `/api/*` and `/data/*` plus `/images/*` to the Node origin. Same-origin cookies then need that rewrite on the same public host.

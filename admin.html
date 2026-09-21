@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=27" />
+  <link rel="stylesheet" href="styles.css?v=20260920e" />
 </head>
 <body class="page-admin">
   <header class="site-header">
@@ -53,18 +53,25 @@
       </div>
     </section>
 
-    <section class="section" data-app-panel hidden>
-      <div class="container">
-        <div class="admin-topbar">
-          <p>Siz: <strong data-session-role></strong></p>
-          <button class="btn btn-ghost" type="button" data-logout>Chiqish</button>
-        </div>
-
-        <nav class="admin-tabs" data-admin-tabs hidden>
-          <button type="button" class="is-active" data-tab="daily">Kunlik ish</button>
-          <button type="button" data-tab="soil">Tuproq hisobotlari</button>
-          <button type="button" data-tab="announce" data-tab-announce>E’lon</button>
-        </nav>
+    <section class="section admin-app" data-app-panel hidden>
+      <div class="admin-shell">
+        <aside class="admin-sidebar">
+          <p class="admin-sidebar-title">Panel</p>
+          <nav class="admin-side-nav admin-tabs" data-admin-tabs hidden>
+            <button type="button" class="is-active" data-tab="daily">Kunlik ish</button>
+            <button type="button" data-tab="soil">Tuproq hisobotlari</button>
+            <button type="button" data-tab="announce" data-tab-announce>E’lonlar</button>
+          </nav>
+          <div class="admin-sidebar-foot">
+            <p>Siz: <strong data-session-role></strong></p>
+            <button class="btn btn-ghost" type="button" data-logout>Chiqish</button>
+          </div>
+        </aside>
+        <div class="admin-stage">
+          <div class="admin-stage-head">
+            <button class="admin-nav-toggle" type="button" data-admin-nav-toggle>Bo‘limlar</button>
+            <h1 data-admin-pane-title>Kunlik ish</h1>
+          </div>
 
         <div class="admin-card admin-wide" data-daily-director hidden>
           <h2>Kunlik ishlar</h2>
@@ -93,7 +100,7 @@
 
         <div class="admin-card admin-wide" data-daily-worker hidden>
           <h2>Bugungi ish</h2>
-          <p class="muted-note">Bugun nima qilganingizni yozing: dala, namuna, yig‘ilish, hujjat, ta’mirlash — tuproq tahlilidan boshqa ishlar ham. Direktor kalendarda ko‘radi.</p>
+          <p class="muted-note">Bugun nima qilganingizni yozing: dala, namuna, yig‘ilish, hujjat, ta’mirlash — tuproq tahlilidan boshqa ishlar ham. Xato bo‘lsa matnni tuzatib qayta saqlang yoki hisobotni o‘chiring. Direktor kalendarda ko‘radi.</p>
           <form class="stack-form" data-identity-form>
             <label>
               Ro‘yxatdan tanlang
@@ -105,31 +112,39 @@
               Yoki ism familiyangizni yozing
               <input type="text" name="name" placeholder="Masalan: Aliyev Ali" />
             </label>
-            <label>
-              Lavozim
-              <input type="text" name="lavozim" placeholder="Ishchi" />
-            </label>
             <button class="btn btn-primary" type="submit">Davom etish</button>
             <p class="form-note" data-identity-status></p>
           </form>
           <form class="stack-form" data-daily-form hidden>
             <p class="muted-note" data-daily-today></p>
+            <p class="muted-note" data-daily-exists-note hidden>Bu kunda hisobot bor. Xato bo‘lsa tuzatib qayta saqlang yoki o‘chiring.</p>
             <label>
               Bugun nima qildingiz?
-              <textarea name="text" rows="8" required placeholder="Masalan: Ertalab Qarshi tumanida namuna oldim. Tushda laboratoriyada pH o‘lchov. Kechki payt yig‘ilish va hisobot."></textarea>
+              <textarea name="text" rows="8" placeholder="Masalan: Ertalab Qarshi tumanida namuna oldim. Tushda laboratoriyada pH o‘lchov. Kechki payt yig‘ilish va hisobot."></textarea>
             </label>
-            <button class="btn btn-primary btn-block" type="submit">Hisobotni saqlash</button>
+            <div class="daily-media">
+              <div class="admin-actions">
+                <label class="btn btn-ghost">
+                  Videoni yuklash
+                  <input type="file" accept="video/*" hidden data-daily-video-file />
+                </label>
+                <label class="btn btn-ghost">
+                  Video olish
+                  <input type="file" accept="video/*" capture="environment" hidden data-daily-video-cam />
+                </label>
+              </div>
+              <p class="muted-note">MP4, WEBM yoki MOV — max 80 MB. Direktor kalendarda ko‘radi.</p>
+              <div class="daily-video-list" data-daily-video-list></div>
+            </div>
+            <div class="admin-actions">
+              <button class="btn btn-primary" type="submit" data-daily-save>Hisobotni saqlash</button>
+              <button class="btn btn-ghost" type="button" data-daily-delete hidden>Hisobotni o‘chirish</button>
+            </div>
             <p class="form-note" data-daily-status></p>
             <p class="admin-actions">
               <a class="btn btn-ghost" href="kunlik.html" data-own-calendar>Kalendar</a>
             </p>
           </form>
-          <div class="announce-preview">
-            <h3 class="h-small">E’lonlar</h3>
-            <ul class="admin-list" data-announcement-list>
-              <li class="muted-note">Hozircha e’lon yo‘q.</li>
-            </ul>
-          </div>
         </div>
 
         <div class="admin-panels" data-director-work hidden>
@@ -170,8 +185,8 @@
 
         <div class="admin-card admin-wide" data-reports-panel hidden>
             <h2>Hisobotlarni qo‘shish yoki almashtirish</h2>
-            <p class="muted-note">Direktor va ishchilar hisobot qo‘shishi, tahrirlashi va o‘chirishi mumkin. Saytda hisobotlar parol bilan ochiladi.</p>
-            <p class="muted-note" data-worker-reports-note hidden>Siz faqat hisobotlarni qo‘shishingiz, tahrirlashingiz va o‘chirishingiz mumkin.</p>
+            <p class="muted-note">Direktor va ishchilar hisobot qo‘shishi va tahrirlashi mumkin. O‘chirish faqat sayt admini orqali. Saytda hisobotlar parol bilan ochiladi.</p>
+            <p class="muted-note" data-worker-reports-note hidden>Siz hisobot qo‘shishingiz va tahrirlashingiz mumkin. O‘chirish faqat admin orqali.</p>
           <form class="stack-form district-form" data-district-form>
             <div class="form-grid">
               <label class="span-2">
@@ -293,6 +308,7 @@
             <li class="muted-note">Hozircha e’lon yo‘q.</li>
           </ul>
         </div>
+        </div>
       </div>
     </section>
   </main>
@@ -311,8 +327,8 @@
     </div>
   </footer>
 
-  <script src="i18n.js?v=2"></script>
-  <script src="site.js?v=15"></script>
-  <script src="admin.js?v=30"></script>
+  <script src="i18n.js?v=20260920"></script>
+  <script src="site.js?v=20260920"></script>
+  <script src="admin.js?v=20260920e"></script>
 </body>
 </html>

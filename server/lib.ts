@@ -1,7 +1,9 @@
 import { query } from "./db.js";
 
 export function todayYmd() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 export function isRestDay(ymd: string) {
@@ -76,10 +78,7 @@ export async function staffPublic() {
     bio: "",
     photo: "",
   };
-  const { rows: workers } = await query<{ name: string; lavozim: string; photo: string }>(
-    `SELECT name, lavozim, photo FROM workers WHERE name <> '' ORDER BY name`
-  );
-  return { director, workers };
+  return { director, workers: [] };
 }
 
 export async function contactPublic() {
@@ -137,6 +136,8 @@ export async function announcementsPublic() {
 }
 
 export async function chatsPublic() {
+  const raw = await setting("announce_chat_ids");
+  const allowed = new Set(raw.split(/[\s,]+/).filter(Boolean));
   const { rows } = await query<{ chat_id: string; name: string; username: string; at: string }>(
     `SELECT chat_id, name, username, at FROM telegram_chats ORDER BY name`
   );
@@ -145,6 +146,7 @@ export async function chatsPublic() {
     name: c.name,
     username: c.username,
     at: c.at,
+    canAnnounce: allowed.has(c.chat_id),
   }));
 }
 

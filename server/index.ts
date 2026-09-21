@@ -4,7 +4,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { PORT, ROOT, TRUST_PROXY, COOKIE_SECURE, ensureDirs, isProd } from "./env.js";
-import { migrate, pool } from "./db.js";
+import { migrate, closeDb } from "./db.js";
 import { seed } from "./seed.js";
 import { attachUser } from "./auth.js";
 import { apiErrorHandler, mountApi } from "./routes.js";
@@ -17,6 +17,7 @@ import {
   staffPublic,
 } from "./lib.js";
 import { query } from "./db.js";
+import { startBotPoller } from "./botPoll.js";
 
 ensureDirs();
 
@@ -31,11 +32,17 @@ app.use(
 );
 app.use(cookieParser());
 app.use((req, res, next) => {
-  if (req.path === "/api/gallery/upload" || req.path === "/api/districts/file") {
+  if (
+    req.path === "/api/gallery/upload" ||
+    req.path === "/api/districts/file" ||
+    req.path === "/api/daily/video"
+  ) {
     next();
     return;
   }
-  express.json({ limit: "10mb" })(req, res, next);
+  express.urlencoded({ extended: false, limit: "1mb" })(req, res, () => {
+    express.json({ limit: "10mb" })(req, res, next);
+  });
 });
 app.use(attachUser);
 
@@ -63,7 +70,11 @@ function blocked(rel: string) {
     n.startsWith("sql/") ||
     n.startsWith("node_modules/") ||
     n.startsWith(".git/") ||
-    n.startsWith("docs/")
+    n.startsWith("docs/") ||
+    n.endsWith(".sqlite") ||
+    n.endsWith(".sqlite-wal") ||
+    n.endsWith(".sqlite-shm") ||
+    n.endsWith("pg-export.json")
   );
 }
 
@@ -121,7 +132,8 @@ app.use((req, res, next) => {
   const protectedFile =
     n === "data/districts.json" ||
     n === "data/district-overrides.json" ||
-    n.startsWith("files/reports/");
+    n.startsWith("files/reports/") ||
+    n.startsWith("files/daily/");
   if (protectedFile && !req.user) {
     res.status(401).json({ ok: false, error: "Kirish kerak." });
     return;
@@ -135,7 +147,8 @@ app.use(
     fallthrough: true,
     setHeaders(res, filePath) {
       if (filePath.endsWith(".html") || filePath.endsWith(".js") || filePath.endsWith(".css")) {
-        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+        res.setHeader("Pragma", "no-cache");
       }
     },
   })
@@ -160,10 +173,16 @@ async function main() {
     if (fs.existsSync(path.join(ROOT, ".env"))) {
       console.log("Loaded environment from .env");
     }
+    startBotPoller();
+    console.log("Telegram bot poller started");
   });
 }
 
 main().catch((err) => {
   console.error(err);
-  pool.end().finally(() => process.exit(1));
+  try {
+    closeDb();
+  } finally {
+    process.exit(1);
+  }
 });

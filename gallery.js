@@ -33,7 +33,7 @@
     } else if (item.type === "youtube") {
       media = `<iframe src="https://www.youtube.com/embed/${escapeHtml(item.src)}" title="${title}" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
     }
-    return `<figure class="gallery-card" data-kind="${escapeHtml(item.type)}">
+    return `<figure class="gallery-card" data-kind="${escapeHtml(item.type)}" data-reveal>
       <div class="gallery-media">${media}</div>
       <figcaption>
         <strong>${title}</strong>
@@ -54,6 +54,7 @@
       return;
     }
     grid.innerHTML = visible.map(card).join("");
+    if (typeof window.ttatiWatchReveal === "function") window.ttatiWatchReveal(grid);
   }
 
   if (filters) {

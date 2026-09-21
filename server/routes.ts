@@ -5,7 +5,7 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { ROOT, MIN_PASSWORD, publicOrigin, isProd } from "./env.js";
-import { query } from "./db.js";
+import { query, sqlNow } from "./db.js";
 import {
   COOKIE,
   cookieOptions,
@@ -18,7 +18,6 @@ import {
   type AuthUser,
 } from "./auth.js";
 import {
-  decryptSecret,
   encryptSecret,
   galleryId,
   hashPassword,
@@ -46,7 +45,10 @@ import {
   workerBrief,
   youtubeId,
 } from "./lib.js";
-import { fetchTelegramUpdates, resolveChatId, telegram } from "./telegram.js";
+import { applyUzbekBotProfile } from "./botLocale.js";
+import { botToken, fetchTelegramUpdates, resolveChatId, telegram } from "./telegram.js";
+import { setAnnounceChat } from "./announce.js";
+import { accountPassword, upsertUser } from "./seed.js";
 
 const loginSchema = z.object({
   username: z.string().trim().min(1).max(80),
@@ -57,17 +59,35 @@ function fail(res: Response, status: number, error: string) {
   res.status(status).json({ ok: false, error });
 }
 
+function parseVideos(raw: unknown): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw.map((v) => String(v || "").trim()).filter((v) => v.startsWith("files/daily/"));
+  }
+  const s = String(raw).trim();
+  if (!s) return [];
+  try {
+    return parseVideos(JSON.parse(s));
+  } catch {
+    return s.startsWith("files/daily/") ? [s] : [];
+  }
+}
+
+function videoExt(filename: string, ctype: string) {
+  let ext = path.extname(filename).toLowerCase();
+  if ([".mp4", ".webm", ".mov", ".m4v", ".3gp"].includes(ext)) return ext;
+  const c = ctype.toLowerCase();
+  if (c.includes("mp4") || c.includes("mpeg")) return ".mp4";
+  if (c.includes("webm")) return ".webm";
+  if (c.includes("quicktime")) return ".mov";
+  if (c.includes("3gpp")) return ".3gp";
+  return "";
+}
+
 function clientIp(req: Request) {
   const xf = req.headers["x-forwarded-for"];
   if (typeof xf === "string" && xf) return xf.split(",")[0].trim();
   return req.ip || "unknown";
-}
-
-async function botToken() {
-  const envTok = process.env.TELEGRAM_BOT_TOKEN?.trim();
-  if (envTok) return envTok;
-  const enc = await setting("bot_token_enc");
-  return enc ? decryptSecret(enc) : "";
 }
 
 async function ingestTelegramChats(token: string) {
@@ -128,6 +148,34 @@ const loginLimit = rateLimit({
   legacyHeaders: false,
   message: { ok: false, error: "Ko‘p urinish. 15 daqiqadan so‘ng qayta urinib ko‘ring." },
 });
+
+const appealSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  contact: z.string().trim().min(3).max(120),
+  message: z.string().trim().min(2).max(2000),
+});
+
+const appealLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: "Ko‘p murojaat. Birozdan so‘ng qayta yuboring." },
+});
+
+async function appealsList() {
+  const { rows } = await query<{
+    id: string;
+    name: string;
+    contact: string;
+    message: string;
+    status: string;
+    created_at: string;
+  }>(
+    `SELECT id, name, contact, message, status, created_at FROM appeals ORDER BY created_at DESC LIMIT 200`
+  );
+  return rows;
+}
 
 async function getUserByUsername(username: string) {
   const { rows } = await query<{
@@ -236,9 +284,9 @@ export function mountApi(app: Express) {
     if (user) {
       const token = randomId(24);
       await query(
-        `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
-         VALUES ($1, $2, now() + interval '1 hour')`,
-        [user.id, sha256(token)]
+        `INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at)
+         VALUES ($1, $2, $3, $4)`,
+        [randomId(16), user.id, sha256(token), new Date(Date.now() + 60 * 60 * 1000).toISOString()]
       );
       if (!isProd) {
         console.log(`Password reset token for ${username} (development only): ${token}`);
@@ -322,12 +370,12 @@ export function mountApi(app: Express) {
     if (/^[0-9]{1,2}$/.test(mRaw)) month = Number(mRaw);
     if (year < 2000 || year > 2100) year = now.getFullYear();
     if (month < 1 || month > 12) month = now.getMonth() + 1;
-    const { rows } = await query<{ date: string; text: string }>(
-      `SELECT to_char(date,'YYYY-MM-DD') AS date, text FROM daily_logs
-       WHERE worker_id = $1 AND date >= make_date($2,$3,1)
-         AND date < make_date($2,$3,1) + interval '1 month'
+    const monthKey = `${year}-${String(month).padStart(2, "0")}`;
+    const { rows } = await query<{ date: string; text: string; video: string }>(
+      `SELECT date, text, video FROM daily_logs
+       WHERE worker_id = $1 AND substr(date, 1, 7) = $2
        ORDER BY date`,
-      [workerIdQ, year, month]
+      [workerIdQ, monthKey]
     );
     res.json({
       ok: true,
@@ -335,7 +383,11 @@ export function mountApi(app: Express) {
       year,
       month,
       worker: workerBrief(worker),
-      logs: rows,
+      logs: rows.map((r) => ({
+        date: r.date,
+        text: r.text,
+        videos: parseVideos(r.video),
+      })),
     });
   });
 
@@ -352,11 +404,14 @@ export function mountApi(app: Express) {
       const found = await query<{ id: string }>(`SELECT id FROM workers WHERE lower(name) = lower($1)`, [name]);
       if (found.rows[0]) worker = await findWorker(found.rows[0].id);
       else {
-        const id = workerId();
+        const id = name;
         await query(
-          `INSERT INTO workers (id, name, lavozim) VALUES ($1,$2,$3)`,
-          [id, name, lavozim]
+          `INSERT INTO workers (id, name, lavozim, login, password_hash) VALUES ($1,$2,$3,$4,$5)`,
+          [id, name, lavozim, name.toLowerCase(), await hashPassword(accountPassword(name))]
         );
+        if (!["admin", "director", "ishchi"].includes(name.toLowerCase())) {
+          await upsertUser(name.toLowerCase(), "worker", name, id);
+        }
         worker = await findWorker(id);
       }
     }
@@ -384,8 +439,19 @@ export function mountApi(app: Express) {
       const worker = await findWorker(existing.rows[0].id);
       return res.json({ ok: true, worker: workerBrief(worker!) });
     }
-    const nid = workerId();
-    await query(`INSERT INTO workers (id, name, lavozim) VALUES ($1,$2,$3)`, [nid, name, lavozim]);
+    const nid = name;
+    const login = name.toLowerCase();
+    const passwordHash = ["admin", "director", "ishchi"].includes(login)
+      ? null
+      : await hashPassword(accountPassword(login));
+    await query(`INSERT INTO workers (id, name, lavozim, login, password_hash) VALUES ($1,$2,$3,$4,$5)`, [
+      nid,
+      name,
+      lavozim,
+      passwordHash ? login : null,
+      passwordHash,
+    ]);
+    if (passwordHash) await upsertUser(login, "worker", name, nid);
     const worker = await findWorker(nid);
     res.json({ ok: true, worker: workerBrief(worker!) });
   });
@@ -405,17 +471,118 @@ export function mountApi(app: Express) {
     if (auth.workerId && auth.workerId !== worker.id) return fail(res, 403, "Ruxsat yo'q.");
     const dateStr = String(req.body?.date || todayYmd()).trim();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return fail(res, 400, "Sana noto'g'ri.");
-    if (isRestDay(dateStr)) return fail(res, 400, "Dam olish kuni.");
     const text = String(req.body?.text || "").trim();
-    if (!text) return fail(res, 400, "Bugungi ishni yozing.");
+    const prev = await query<{ text: string; video: string }>(
+      `SELECT text, video FROM daily_logs WHERE worker_id = $1 AND date = $2`,
+      [worker.id, dateStr]
+    );
+    const videos =
+      req.body?.videos !== undefined ? parseVideos(req.body.videos) : parseVideos(prev.rows[0]?.video);
+    if (!text && !videos.length) return fail(res, 400, "Matn yozing yoki video qo‘shing.");
     const id = randomId(8);
     await query(
-      `INSERT INTO daily_logs (id, worker_id, date, text, updated_at)
-       VALUES ($1,$2,$3,$4, now())
-       ON CONFLICT (worker_id, date) DO UPDATE SET text = EXCLUDED.text, updated_at = now()`,
-      [id, worker.id, dateStr, text]
+      `INSERT INTO daily_logs (id, worker_id, date, text, video, updated_at)
+       VALUES ($1,$2,$3,$4,$5, now())
+       ON CONFLICT (worker_id, date) DO UPDATE SET text = EXCLUDED.text, video = EXCLUDED.video, updated_at = now()`,
+      [id, worker.id, dateStr, text, JSON.stringify(videos)]
     );
-    res.json({ ok: true, date: dateStr, text, workerId: worker.id });
+    res.json({ ok: true, date: dateStr, text, videos, workerId: worker.id });
+  });
+
+  app.post(
+    "/api/daily/video",
+    requireAuth(["worker"]),
+    express.raw({ type: "*/*", limit: "80mb" }),
+    async (req, res) => {
+      const auth = req.user!;
+      let wid = auth.workerId || String(req.query.workerId || "").trim();
+      const worker = await findWorker(wid);
+      if (!worker) return fail(res, 400, "Avval ismingizni tanlang.");
+      if (auth.workerId && auth.workerId !== worker.id) return fail(res, 403, "Ruxsat yo'q.");
+      const dateStr = String(req.query.date || todayYmd()).trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return fail(res, 400, "Sana noto'g'ri.");
+      const ext = videoExt(String(req.query.filename || ""), String(req.headers["content-type"] || ""));
+      if (!ext) return fail(res, 400, "Faqat MP4, WEBM yoki MOV video.");
+      const bytes = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body || []);
+      if (bytes.length < 32) return fail(res, 400, "Fayl juda kichik.");
+      if (bytes.length > 80 * 1024 * 1024) return fail(res, 400, "Video 80 MB dan oshmasin.");
+      const rel = `files/daily/${randomId(10)}${ext}`;
+      const dest = path.join(ROOT, ...rel.split("/"));
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.writeFileSync(dest, bytes);
+      const prev = await query<{ text: string; video: string }>(
+        `SELECT text, video FROM daily_logs WHERE worker_id = $1 AND date = $2`,
+        [worker.id, dateStr]
+      );
+      const videos = [...parseVideos(prev.rows[0]?.video), rel];
+      const text = String(prev.rows[0]?.text || "");
+      await query(
+        `INSERT INTO daily_logs (id, worker_id, date, text, video, updated_at)
+         VALUES ($1,$2,$3,$4,$5, now())
+         ON CONFLICT (worker_id, date) DO UPDATE SET video = EXCLUDED.video, updated_at = now()`,
+        [randomId(8), worker.id, dateStr, text, JSON.stringify(videos)]
+      );
+      res.json({ ok: true, path: rel, videos, date: dateStr });
+    }
+  );
+
+  app.post("/api/daily/video/delete", requireAuth(["worker"]), async (req, res) => {
+    const auth = req.user!;
+    let wid = auth.workerId || String(req.body?.workerId || "").trim();
+    const worker = await findWorker(wid);
+    if (!worker) return fail(res, 400, "Avval ismingizni tanlang.");
+    if (auth.workerId && auth.workerId !== worker.id) return fail(res, 403, "Ruxsat yo'q.");
+    const dateStr = String(req.body?.date || todayYmd()).trim();
+    const rel = String(req.body?.path || "").trim();
+    if (!rel.startsWith("files/daily/")) return fail(res, 400, "Noto‘g‘ri fayl.");
+    const prev = await query<{ video: string }>(
+      `SELECT video FROM daily_logs WHERE worker_id = $1 AND date = $2`,
+      [worker.id, dateStr]
+    );
+    const videos = parseVideos(prev.rows[0]?.video).filter((v) => v !== rel);
+    await query(`UPDATE daily_logs SET video = $3, updated_at = now() WHERE worker_id = $1 AND date = $2`, [
+      worker.id,
+      dateStr,
+      JSON.stringify(videos),
+    ]);
+    const full = path.join(ROOT, ...rel.split("/"));
+    if (full.startsWith(ROOT) && fs.existsSync(full)) fs.unlinkSync(full);
+    res.json({ ok: true, videos });
+  });
+
+  /** Xato yuborilgan kunlik hisobotni butunlay o‘chirish (matn + videolar). */
+  app.post("/api/daily/logs/delete", requireAuth(["worker"]), async (req, res) => {
+    const auth = req.user!;
+    let wid = auth.workerId || String(req.body?.workerId || "").trim();
+    const worker = await findWorker(wid);
+    if (!worker) return fail(res, 400, "Avval ismingizni tanlang.");
+    if (auth.workerId && auth.workerId !== worker.id) return fail(res, 403, "Ruxsat yo'q.");
+    const dateStr = String(req.body?.date || todayYmd()).trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return fail(res, 400, "Sana noto'g'ri.");
+    if (dateStr > todayYmd()) return fail(res, 400, "Kelajakdagi sana o‘chirilmaydi.");
+    const prev = await query<{ video: string }>(
+      `SELECT video FROM daily_logs WHERE worker_id = $1 AND date = $2`,
+      [worker.id, dateStr]
+    );
+    if (!prev.rows[0]) return fail(res, 404, "Bu kunda hisobot topilmadi.");
+    const videos = parseVideos(prev.rows[0].video);
+    const { rowCount } = await query(`DELETE FROM daily_logs WHERE worker_id = $1 AND date = $2`, [
+      worker.id,
+      dateStr,
+    ]);
+    if (!rowCount) return fail(res, 404, "Bu kunda hisobot topilmadi.");
+    for (const rel of videos) {
+      if (!rel.startsWith("files/daily/")) continue;
+      const full = path.join(ROOT, ...rel.split("/"));
+      if (full.startsWith(ROOT) && fs.existsSync(full)) {
+        try {
+          fs.unlinkSync(full);
+        } catch {
+          /* fayl yo‘q bo‘lishi mumkin */
+        }
+      }
+    }
+    res.json({ ok: true, date: dateStr });
   });
 
   app.post("/api/token", requireAuth(["admin"]), async (req, res) => {
@@ -428,7 +595,12 @@ export function mountApi(app: Express) {
     if (!/^\d+:[A-Za-z0-9_-]+$/.test(token)) {
       return fail(res, 400, "Token formati noto'g'ri. BotFather'dan olingan to'liq tokenni yozing.");
     }
-    const me = await telegram(token, "getMe");
+    let me: { result?: { username?: string }; username?: string };
+    try {
+      me = await telegram(token, "getMe");
+    } catch (err) {
+      return fail(res, 400, err instanceof Error ? err.message : "Telegramga ulanib bo'lmadi.");
+    }
     try {
       await telegram(token, "deleteWebhook");
     } catch {
@@ -438,6 +610,11 @@ export function mountApi(app: Express) {
     await setSetting("bot_token_enc", encryptSecret(token));
     await setSetting("bot_username", uname);
     await setSetting("telegram_offset", "0");
+    try {
+      await applyUzbekBotProfile(token);
+    } catch (err) {
+      console.warn("bot locale", err instanceof Error ? err.message : err);
+    }
     let chats: unknown[] = [];
     try {
       chats = await ingestTelegramChats(token);
@@ -467,8 +644,11 @@ export function mountApi(app: Express) {
         oldMap.get(`${name.toLowerCase()}|${String(w.telegram || "").trim()}`) ||
         null;
       const telegram = await resolveWorkerTelegram(String(w.telegram || old?.telegram || ""));
-      const id = wid || old?.id || workerId();
-      let login = String(w.login || old?.login || "").trim().toLowerCase() || null;
+      const id = wid || old?.id || name;
+      let login =
+        String(w.login || old?.login || name)
+          .trim()
+          .toLowerCase() || null;
       if (login && used.has(login) && login !== old?.login) {
         return fail(res, 400, `Login band: ${login}`);
       }
@@ -480,6 +660,8 @@ export function mountApi(app: Express) {
           return fail(res, 400, `Parol kamida ${MIN_PASSWORD} belgi bo'lsin.`);
         }
         passwordHash = await hashPassword(newPass);
+      } else if (!passwordHash && login && !["admin", "director", "ishchi"].includes(login)) {
+        passwordHash = await hashPassword(accountPassword(login));
       }
       kept.push({
         id,
@@ -493,7 +675,8 @@ export function mountApi(app: Express) {
     }
     const keepIds = kept.map((w) => w.id);
     if (keepIds.length) {
-      await query(`DELETE FROM workers WHERE NOT (id = ANY($1::text[]))`, [keepIds]);
+      const placeholders = keepIds.map((_, i) => `$${i + 1}`).join(", ");
+      await query(`DELETE FROM workers WHERE id NOT IN (${placeholders})`, keepIds);
     } else {
       await query(`DELETE FROM workers`);
     }
@@ -513,10 +696,14 @@ export function mountApi(app: Express) {
       );
       if (w.login && w.password_hash) {
         await query(
-          `INSERT INTO users (username, password_hash, role, label, worker_id)
-           VALUES ($1,$2,'worker',$3,$4)
-           ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash, worker_id = EXCLUDED.worker_id, label = EXCLUDED.label`,
-          [w.login, w.password_hash, w.name, w.id]
+          `INSERT INTO users (id, username, password_hash, role, label, worker_id)
+           VALUES ($1,$2,$3,'worker',$4,$5)
+           ON CONFLICT (username) DO UPDATE SET
+             id = EXCLUDED.id,
+             password_hash = EXCLUDED.password_hash,
+             worker_id = EXCLUDED.worker_id,
+             label = EXCLUDED.label`,
+          [w.login, w.login, w.password_hash, w.name, w.id]
         );
       }
     }
@@ -585,7 +772,7 @@ export function mountApi(app: Express) {
     res.json({ ok: true, count: list.length, districts: list });
   });
 
-  app.post("/api/districts/delete", requireAuth(["director", "worker"]), async (req, res) => {
+  app.post("/api/districts/delete", requireAuth(["admin"]), async (req, res) => {
     const id = String(req.body?.id || "").trim().toLowerCase();
     if (!id) return fail(res, 400, "Hisobot id kerak.");
     const base = await query(`SELECT id FROM districts WHERE id = $1`, [id]);
@@ -650,6 +837,52 @@ export function mountApi(app: Express) {
     }
   );
 
+  app.post("/api/appeal", appealLimit, async (req, res) => {
+    const parsed = appealSchema.safeParse({
+      name: req.body?.name,
+      contact: req.body?.contact,
+      message: req.body?.message,
+    });
+    if (!parsed.success) return fail(res, 400, "Ism, telefon/email va xabar to‘ldirilsin.");
+    await query(
+      `INSERT INTO appeals (id, name, contact, message, status, created_at) VALUES ($1,$2,$3,$4,'new',now())`,
+      [randomId(12), parsed.data.name, parsed.data.contact, parsed.data.message]
+    );
+    const accept = String(req.headers.accept || "");
+    const isForm = String(req.headers["content-type"] || "").includes("application/x-www-form-urlencoded");
+    if (isForm && !accept.includes("application/json")) {
+      res.redirect(303, "/index.html?murojaat=ok#murojaat");
+      return;
+    }
+    res.json({ ok: true });
+  });
+
+  app.get("/api/appeals", requireAuth(["admin"]), async (_req, res) => {
+    res.json({ ok: true, appeals: await appealsList() });
+  });
+
+  app.post("/api/appeals/status", requireAuth(["admin"]), async (req, res) => {
+    const id = String(req.body?.id || "").trim();
+    const status = String(req.body?.status || "").trim();
+    if (!id || !["new", "read", "done"].includes(status)) {
+      return fail(res, 400, "Noto‘g‘ri so‘rov.");
+    }
+    const { rowCount } = await query(
+      `UPDATE appeals SET status = $2, read_at = $3 WHERE id = $1`,
+      [id, status, status === "new" ? null : sqlNow()]
+    );
+    if (!rowCount) return fail(res, 404, "Murojaat topilmadi.");
+    res.json({ ok: true, appeals: await appealsList() });
+  });
+
+  app.post("/api/appeals/delete", requireAuth(["admin"]), async (req, res) => {
+    const id = String(req.body?.id || "").trim();
+    if (!id) return fail(res, 400, "id kerak.");
+    const { rowCount } = await query(`DELETE FROM appeals WHERE id = $1`, [id]);
+    if (!rowCount) return fail(res, 404, "Murojaat topilmadi.");
+    res.json({ ok: true, appeals: await appealsList() });
+  });
+
   app.post("/api/contact", requireAuth(["admin"]), async (req, res) => {
     try {
       const phone = String(req.body?.phone || "").trim();
@@ -672,12 +905,14 @@ export function mountApi(app: Express) {
   app.get("/api/telegram/chats", requireAuth(["admin"]), async (_req, res) => {
     const token = await botToken();
     if (!token) return fail(res, 400, "Avval bot tokenini saqlang.");
-    try {
-      const chats = await ingestTelegramChats(token);
-      res.json({ ok: true, chats });
-    } catch (err) {
-      fail(res, 400, err instanceof Error ? err.message : "Telegram chatlar olinmadi.");
-    }
+    res.json({ ok: true, chats: await chatsPublic() });
+  });
+
+  app.post("/api/telegram/chats/announce", requireAuth(["admin"]), async (req, res) => {
+    const chatId = String(req.body?.chat_id || "").trim();
+    if (!chatId) return fail(res, 400, "chat_id kerak.");
+    await setAnnounceChat(chatId, Boolean(req.body?.enabled));
+    res.json({ ok: true, chats: await chatsPublic() });
   });
 
   app.post("/api/telegram/chats/delete", requireAuth(["admin"]), async (req, res) => {
@@ -694,7 +929,7 @@ export function mountApi(app: Express) {
     const chatId = await resolveChatId(token, String(req.body?.chat_id || ""));
     const resp = await telegram(token, "sendMessage", "", {
       chat_id: chatId,
-      text: "Qashqadaryo Tuproq Lab: test xabar. Bot ishlayapti.",
+      text: "Qashqadaryo Tuproq Lab: sinov xabari. Bot ishlayapti.",
     });
     res.json({ ok: Boolean(resp.ok), chat_id: chatId });
   });

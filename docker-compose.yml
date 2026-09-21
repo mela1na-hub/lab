@@ -1,3 +1,4 @@
+# Optional. The app uses SQLite (data/app.sqlite) and does not need this.
 services:
   db:
     image: postgres:16-alpine
@@ -6,7 +7,7 @@ services:
       POSTGRES_PASSWORD: lab
       POSTGRES_DB: soillab
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - soillab_pg:/var/lib/postgresql/data
     healthcheck:

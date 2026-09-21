@@ -1,6 +1,5 @@
-import { migrate } from "./db.js";
-import { pool } from "./db.js";
+import { migrate, closeDb } from "./db.js";
 
 await migrate();
-await pool.end();
+closeDb();
 console.log("Migrations applied.");

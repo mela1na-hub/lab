@@ -17,7 +17,10 @@ function required(name: string): string {
 export const NODE_ENV = process.env.NODE_ENV || "development";
 export const isProd = NODE_ENV === "production";
 export const PORT = Number(process.env.PORT || 3000);
-export const DATABASE_URL = required("DATABASE_URL");
+export const SQLITE_PATH = path.resolve(
+  ROOT,
+  process.env.SQLITE_PATH?.trim() || path.join("data", "app.sqlite")
+);
 export const SESSION_SECRET = required("SESSION_SECRET");
 export const COOKIE_SECURE =
   process.env.COOKIE_SECURE === "true" || (isProd && process.env.COOKIE_SECURE !== "false");
@@ -38,6 +41,7 @@ export function ensureDirs() {
     "images/gallery",
     "media/gallery",
     "files/reports",
+    "files/daily",
   ]) {
     fs.mkdirSync(path.join(ROOT, rel), { recursive: true });
   }

@@ -7,3 +7,11 @@ TELEFON-LINK.txt
 SAYT-LINK.txt
 node_modules
 dist
+files/
+data/app.sqlite
+data/app.sqlite-wal
+data/app.sqlite-shm
+data/pg-export.json
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm

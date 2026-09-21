@@ -77,15 +77,56 @@
 
   const contactForm = document.querySelector("[data-contact-form]");
   const contactNote = document.querySelector("[data-contact-note]");
+  if (contactNote && /(?:\?|&)murojaat=ok(?:&|$)/.test(location.search)) {
+    contactNote.hidden = false;
+    contactNote.classList.remove("error");
+    contactNote.textContent = tx(
+      "appeal.thanks",
+      "Rahmat. Murojaatingiz qabul qilindi. Tez orada bog‘lanamiz."
+    );
+  }
   if (contactForm && contactNote) {
-    contactForm.addEventListener("submit", (event) => {
+    contactForm.addEventListener("submit", async (event) => {
       event.preventDefault();
+      const btn = contactForm.querySelector('button[type="submit"]');
+      const fd = new FormData(contactForm);
+      const payload = {
+        name: String(fd.get("name") || "").trim(),
+        contact: String(fd.get("contact") || "").trim(),
+        message: String(fd.get("message") || "").trim(),
+      };
       contactNote.hidden = false;
-      contactNote.textContent = tx(
-        "appeal.thanks",
-        "Rahmat. Murojaatingiz qabul qilindi (demo: serverga yuborilmaydi). Telefon yoki email orqali bog‘lanamiz."
-      );
-      contactForm.reset();
+      contactNote.classList.remove("error");
+      contactNote.textContent = tx("appeal.sending", "Yuborilmoqda...");
+      if (btn) btn.disabled = true;
+      try {
+        const res = await fetch("/api/appeal", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json; charset=utf-8" },
+          body: JSON.stringify(payload),
+        });
+        let data = {};
+        try {
+          data = await res.json();
+        } catch {
+          data = {};
+        }
+        if (!res.ok || data.ok === false) {
+          throw new Error(data.error || tx("appeal.error", "Yuborilmadi. Qayta urinib ko‘ring."));
+        }
+        contactNote.textContent = tx(
+          "appeal.thanks",
+          "Rahmat. Murojaatingiz qabul qilindi. Tez orada bog‘lanamiz."
+        );
+        contactForm.reset();
+      } catch (err) {
+        contactNote.classList.add("error");
+        contactNote.textContent =
+          (err && err.message) || tx("appeal.error", "Yuborilmadi. Qayta urinib ko‘ring.");
+      } finally {
+        if (btn) btn.disabled = false;
+      }
     });
   }
 
@@ -148,19 +189,6 @@
       .replace(/"/g, "&quot;");
   }
 
-  function maskName(name) {
-    return String(name || "")
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean)
-      .map((word) => {
-        const first = word.charAt(0);
-        const rest = word.length > 1 ? "*".repeat(word.length - 1) : "";
-        return first + rest;
-      })
-      .join(" ");
-  }
-
   const staffGrid = document.querySelector("[data-staff-grid]");
   let staffData = null;
 
@@ -178,34 +206,18 @@
       return;
     }
     const dir = staffData.director || {};
-    const workers = Array.isArray(staffData.workers) ? staffData.workers : [];
     const photo = dir.photo
       ? `<img class="staff-photo" src="${escapeHtml(dir.photo)}" alt="" />`
       : "";
-    const workerCards = workers.length
-      ? workers
-          .map(
-            (w) => `<article class="staff-block">
-            ${w.photo ? `<img class="staff-photo" src="${escapeHtml(w.photo)}" alt="" />` : ""}
-            <p class="staff-role">${escapeHtml(staffRole(w.lavozim, "staff.worker"))}</p>
-            <h3>${escapeHtml(maskName(w.name || ""))}</h3>
-          </article>`
-          )
-          .join("")
-      : `<article class="staff-block">
-            <p class="staff-role">${escapeHtml(tx("staff.workers"))}</p>
-            <h3>${escapeHtml(tx("staff.teamTitle"))}</h3>
-            <p>${escapeHtml(tx("staff.teamText"))}</p>
-            <p class="muted-note">${escapeHtml(tx("staff.teamNote"))}</p>
-          </article>`;
-    staffGrid.innerHTML = `<article class="staff-block staff-director${photo ? " has-photo" : ""}">
+    staffGrid.innerHTML = `<article class="staff-block staff-director${photo ? " has-photo" : ""}" data-reveal>
           ${photo}
           <div>
             <p class="staff-role">${escapeHtml(staffRole(dir.role, "staff.director"))}</p>
-            <h3>${escapeHtml(maskName(dir.name || tx("staff.dirFallback")))}</h3>
+            <h3>${escapeHtml(dir.name || tx("staff.dirFallback"))}</h3>
             <p>${escapeHtml(dir.bio || tx("staff.dirBio"))}</p>
           </div>
-        </article>${workerCards}`;
+        </article>`;
+    if (typeof watchReveal === "function") watchReveal(staffGrid);
   }
 
   if (staffGrid) {
@@ -228,4 +240,32 @@
   window.addEventListener("ttati:lang", () => {
     if (staffGrid && staffData) renderStaff();
   });
+
+  const revealIo = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-in");
+        revealIo.unobserve(entry.target);
+      });
+    },
+    { threshold: 0.14, rootMargin: "0px 0px -8% 0px" }
+  );
+
+  function watchReveal(root) {
+    (root || document).querySelectorAll("[data-reveal]").forEach((el) => {
+      if (el.classList.contains("is-in")) return;
+      revealIo.observe(el);
+    });
+  }
+
+  watchReveal(document);
+  window.ttatiWatchReveal = watchReveal;
+
+  const galleryGrid = document.querySelector("[data-gallery-grid]");
+  if (galleryGrid) {
+    new MutationObserver(() => watchReveal(galleryGrid)).observe(galleryGrid, {
+      childList: true,
+    });
+  }
 })();

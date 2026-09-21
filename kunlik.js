@@ -34,6 +34,7 @@
   let worker = null;
   let today = ymd(now);
   let logs = {};
+  let videosByDate = {};
   let selectedDate = "";
 
   function ymd(d) {
@@ -76,6 +77,49 @@
     return s.length > 28 ? `${s.slice(0, 28)}…` : s;
   }
 
+  function dayVideos(dateStr) {
+    return Array.isArray(videosByDate[dateStr]) ? videosByDate[dateStr] : [];
+  }
+
+  function renderCalVideos(dateStr, canEdit) {
+    const box = document.querySelector("[data-cal-videos]");
+    if (!box) return;
+    const videos = dayVideos(dateStr);
+    if (!videos.length) {
+      box.innerHTML = "";
+      return;
+    }
+    box.innerHTML = videos
+      .map(
+        (src) => `<div class="daily-video-item">
+          <video src="${escapeHtml(src)}" controls preload="metadata"></video>
+          ${
+            canEdit
+              ? `<div class="item-actions"><button type="button" data-cal-video-del="${escapeHtml(src)}">Videoni o‘chirish</button></div>`
+              : ""
+          }
+        </div>`
+      )
+      .join("");
+    box.querySelectorAll("[data-cal-video-del]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const path = btn.getAttribute("data-cal-video-del");
+        if (!path || !confirm("Videoni o‘chirasizmi?")) return;
+        try {
+          const saved = await api("/api/daily/video/delete", {
+            method: "POST",
+            body: JSON.stringify({ date: selectedDate, path, workerId: worker.id }),
+          });
+          videosByDate[selectedDate] = saved.videos || [];
+          renderCalVideos(selectedDate, true);
+          renderGrid();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    });
+  }
+
   async function api(path, options = {}) {
     const res = await fetch(path, {
       cache: "no-store",
@@ -108,7 +152,7 @@
     if (!d) return "future";
     if (isRest(d)) return "off";
     if (dateStr > today) return "future";
-    if (logs[dateStr]) return "ok";
+    if (logs[dateStr] || dayVideos(dateStr).length) return "ok";
     return "miss";
   }
 
@@ -151,23 +195,36 @@
     const kind = statusFor(dateStr);
     const canEdit = session && session.role === "worker";
     if (editForm) editForm.hidden = true;
-    if (kind === "off") {
-      if (dayText) dayText.textContent = "Dam olish kuni. Ish yozilmaydi.";
-      return;
-    }
+    const existsNote = document.querySelector("[data-cal-exists-note]");
+    const deleteBtn = document.querySelector("[data-cal-delete]");
+    const saveBtn = document.querySelector("[data-cal-save]");
+    if (existsNote) existsNote.hidden = true;
+    if (deleteBtn) deleteBtn.hidden = true;
     if (kind === "future") {
       if (dayText) dayText.textContent = "Bu kun hali kelmagan.";
+      renderCalVideos(dateStr, false);
       return;
     }
     const text = logs[dateStr] || "";
+    const hasReport = Boolean(String(text).trim() || dayVideos(dateStr).length);
     if (dayText) {
-      dayText.textContent = text || "Bu kunda ish yozilmagan.";
+      dayText.textContent =
+        text ||
+        (dayVideos(dateStr).length
+          ? "Video qo‘shilgan."
+          : kind === "off"
+            ? "Dam olish kuni. Kerak bo‘lsa ish yozish mumkin."
+            : "Bu kunda ish yozilmagan.");
     }
-    if (canEdit && dateStr <= today && kind !== "off") {
+    renderCalVideos(dateStr, Boolean(canEdit && dateStr <= today));
+    if (canEdit && dateStr <= today) {
       editForm.hidden = false;
       const area = editForm.querySelector("textarea");
       if (area) area.value = text;
       if (editStatus) editStatus.textContent = "";
+      if (existsNote) existsNote.hidden = !hasReport;
+      if (deleteBtn) deleteBtn.hidden = !hasReport;
+      if (saveBtn) saveBtn.textContent = hasReport ? "Qayta saqlash" : "Saqlash";
     }
     if (dayView.scrollIntoView) {
       dayView.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -182,8 +239,11 @@
     today = data.today || today;
     worker = data.worker || worker;
     logs = {};
+    videosByDate = {};
     asList(data.logs).forEach((item) => {
-      if (item.date) logs[item.date] = item.text || "";
+      if (!item.date) return;
+      logs[item.date] = item.text || "";
+      videosByDate[item.date] = Array.isArray(item.videos) ? item.videos : [];
     });
     if (titleEl) titleEl.textContent = worker.name || "Kalendar";
     if (whoEl) whoEl.textContent = worker.lavozim || "";
@@ -229,19 +289,94 @@
     }
   });
 
+  async function uploadCalVideo(file) {
+    if (!file || !selectedDate || !worker) return;
+    try {
+      if (editStatus) editStatus.textContent = "Video yuklanmoqda...";
+      const params = new URLSearchParams({
+        date: selectedDate,
+        workerId: worker.id,
+        filename: file.name || "video.mp4",
+      });
+      const res = await fetch(`/api/daily/video?${params.toString()}`, {
+        method: "POST",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      const saved = await res.json().catch(() => ({}));
+      if (!res.ok || saved.ok === false) {
+        throw new Error(saved.error || `Server xatosi (${res.status})`);
+      }
+      videosByDate[selectedDate] = saved.videos || [];
+      renderCalVideos(selectedDate, true);
+      renderGrid();
+      if (editStatus) editStatus.textContent = "Video qo‘shildi.";
+    } catch (err) {
+      if (editStatus) editStatus.textContent = err.message;
+    }
+  }
+
+  [
+    document.querySelector("[data-cal-video-file]"),
+    document.querySelector("[data-cal-video-cam]"),
+  ].forEach((input) => {
+    if (!input) return;
+    input.addEventListener("change", async () => {
+      const file = input.files && input.files[0];
+      input.value = "";
+      if (file) await uploadCalVideo(file);
+    });
+  });
+
   if (editForm) {
     editForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const text = String(new FormData(editForm).get("text") || "").trim();
-      if (!text || !selectedDate) return;
+      if (!selectedDate) return;
+      if (!text && !dayVideos(selectedDate).length) {
+        if (editStatus) editStatus.textContent = "Matn yozing yoki video qo‘shing.";
+        return;
+      }
       try {
         if (editStatus) editStatus.textContent = "Saqlanmoqda...";
         await api("/api/daily/logs", {
           method: "POST",
-          body: JSON.stringify({ date: selectedDate, text, workerId: worker.id }),
+          body: JSON.stringify({
+            date: selectedDate,
+            text,
+            workerId: worker.id,
+            videos: dayVideos(selectedDate),
+          }),
         });
         logs[selectedDate] = text;
-        if (editStatus) editStatus.textContent = "Saqlandi.";
+        if (editStatus) editStatus.textContent = "Saqlandi. Xato bo‘lsa yana tuzatib saqlashingiz mumkin.";
+        renderGrid();
+        openDay(selectedDate);
+      } catch (err) {
+        if (editStatus) editStatus.textContent = err.message;
+      }
+    });
+  }
+
+  const calDeleteBtn = document.querySelector("[data-cal-delete]");
+  if (calDeleteBtn) {
+    calDeleteBtn.addEventListener("click", async () => {
+      if (!selectedDate || !worker) return;
+      if (!confirm("Bu kundagi hisobotni butunlay o‘chirasizmi? Matn va videolar ham o‘chadi.")) return;
+      try {
+        if (editStatus) editStatus.textContent = "O‘chirilmoqda...";
+        await api("/api/daily/logs/delete", {
+          method: "POST",
+          body: JSON.stringify({
+            date: selectedDate,
+            workerId: worker.id,
+          }),
+        });
+        delete logs[selectedDate];
+        videosByDate[selectedDate] = [];
+        if (editStatus) editStatus.textContent = "Hisobot o‘chirildi.";
         renderGrid();
         openDay(selectedDate);
       } catch (err) {

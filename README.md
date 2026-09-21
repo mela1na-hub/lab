@@ -2,15 +2,15 @@
 
 Tuproqshunoslik va agrokimyoviy tadqiqotlar instituti — Qashqadaryo bo‘linmasi.
 
-**Production:** Node.js + PostgreSQL. See [docs/DEPLOY.md](docs/DEPLOY.md).
+**Ishga tushirish:** Node.js + SQLite. See [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ```bash
-docker compose up -d
-cp .env.example .env   # set SESSION_SECRET and passwords
+cp .env.example .env   # set SESSION_SECRET
 npm install
 npm start
 ```
 
-Or double-click `OCHISH.bat` after `.env` exists.
+Yoki `.env` bo‘lsa `OCHISH.bat` ni oching.
 
-The old `serve.ps1` listener is deprecated and is not for the public internet.
+Loginlar: `admin`, `director`, `ishchi` (va ishchi ismi).
+Parol: login + `123` (`admin123`, `director123`, `ishchi123`).

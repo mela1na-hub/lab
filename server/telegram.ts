@@ -1,4 +1,63 @@
-export async function telegram(token: string, method: string, query = "", body?: unknown) {
+import https from "node:https";
+import { decryptSecret } from "./crypto.js";
+import { setting } from "./lib.js";
+
+export async function botToken() {
+  const envTok = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  if (envTok) return envTok;
+  const enc = await setting("bot_token_enc");
+  return enc ? decryptSecret(enc) : "";
+}
+
+function telegramHttp(url: URL, body?: unknown, timeoutMs = 25000): Promise<{ status: number; data: any }> {
+  const payload = body ? JSON.stringify(body) : undefined;
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        hostname: url.hostname,
+        path: `${url.pathname}${url.search}`,
+        method: payload ? "POST" : "GET",
+        family: 4,
+        timeout: timeoutMs,
+        headers: payload
+          ? {
+              "Content-Type": "application/json",
+              "Content-Length": Buffer.byteLength(payload),
+            }
+          : undefined,
+      },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () => {
+          const raw = Buffer.concat(chunks).toString("utf8");
+          try {
+            resolve({ status: res.statusCode || 0, data: raw ? JSON.parse(raw) : {} });
+          } catch {
+            reject(new Error("Telegram javobi o'qilmadi."));
+          }
+        });
+      }
+    );
+    req.on("timeout", () => {
+      req.destroy();
+      reject(new Error("Telegramga ulanish vaqti tugadi."));
+    });
+    req.on("error", (err) => {
+      reject(new Error(err.message || "Telegramga ulanib bo'lmadi."));
+    });
+    if (payload) req.write(payload);
+    req.end();
+  });
+}
+
+export async function telegram(
+  token: string,
+  method: string,
+  query = "",
+  body?: unknown,
+  timeoutMs = 25000
+) {
   const url = new URL(`https://api.telegram.org/bot${token}/${method}`);
   if (query) {
     for (const part of query.split("&")) {
@@ -6,17 +65,11 @@ export async function telegram(token: string, method: string, query = "", body?:
       if (k) url.searchParams.set(k, decodeURIComponent(v || ""));
     }
   }
-  const res = await fetch(url, {
-    method: body ? "POST" : "GET",
-    headers: body ? { "Content-Type": "application/json" } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-    signal: AbortSignal.timeout(25000),
-  });
-  const data = (await res.json()) as { ok?: boolean; description?: string; result?: any };
-  if (!res.ok || data.ok === false) {
-    throw new Error(data.description || "Telegram xatosi");
+  const { status, data } = await telegramHttp(url, body, timeoutMs);
+  if (status >= 400 || data?.ok === false) {
+    throw new Error(data?.description || "Telegram xatosi");
   }
-  return data;
+  return data as { ok?: boolean; description?: string; result?: any };
 }
 
 export async function resolveChatId(token: string, raw: string) {
