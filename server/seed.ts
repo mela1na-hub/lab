@@ -38,8 +38,11 @@ export async function upsertUser(
   const hash = await hashPassword(accountPassword(id));
   const { rows } = await query(`SELECT id FROM users WHERE username = $1`, [id]);
   if (rows.length) {
+    // Preserve existing worker_id when null is passed (e.g. reserved ishchi on every boot).
+    // Clearing identity on restart broke the worker calendar until they re-picked a name.
     await query(
-      `UPDATE users SET password_hash = $2, role = $3, label = $4, worker_id = $5,
+      `UPDATE users SET password_hash = $2, role = $3, label = $4,
+        worker_id = COALESCE($5, worker_id),
         failed_attempts = 0, locked_until = NULL, updated_at = now()
        WHERE username = $1`,
       [id, hash, role, label, workerIdValue]

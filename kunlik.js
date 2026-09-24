@@ -232,25 +232,33 @@
   }
 
   async function loadMonth() {
-    if (!worker || !worker.id) return;
-    const data = await api(
-      `/api/daily/logs?workerId=${encodeURIComponent(worker.id)}&year=${year}&month=${month}`
-    );
-    today = data.today || today;
-    worker = data.worker || worker;
-    logs = {};
-    videosByDate = {};
-    asList(data.logs).forEach((item) => {
-      if (!item.date) return;
-      logs[item.date] = item.text || "";
-      videosByDate[item.date] = Array.isArray(item.videos) ? item.videos : [];
-    });
-    if (titleEl) titleEl.textContent = worker.name || "Kalendar";
-    if (whoEl) whoEl.textContent = worker.lavozim || "";
-    renderGrid();
-    if (selectedDate) openDay(selectedDate);
-    else if (logs[today] || (!isRest(now) && month === now.getMonth() + 1 && year === now.getFullYear())) {
-      openDay(today);
+    if (!worker || !worker.id) {
+      renderGrid();
+      return;
+    }
+    try {
+      const data = await api(
+        `/api/daily/logs?workerId=${encodeURIComponent(worker.id)}&year=${year}&month=${month}`
+      );
+      today = data.today || today;
+      worker = data.worker || worker;
+      logs = {};
+      videosByDate = {};
+      asList(data.logs).forEach((item) => {
+        if (!item.date) return;
+        logs[item.date] = item.text || "";
+        videosByDate[item.date] = Array.isArray(item.videos) ? item.videos : [];
+      });
+      if (titleEl) titleEl.textContent = worker.name || "Kalendar";
+      if (whoEl) whoEl.textContent = worker.lavozim || "";
+      renderGrid();
+      if (selectedDate) openDay(selectedDate);
+      else if (logs[today] || (!isRest(now) && month === now.getMonth() + 1 && year === now.getFullYear())) {
+        openDay(today);
+      }
+    } catch (err) {
+      renderGrid();
+      throw err;
     }
   }
 
@@ -420,10 +428,23 @@
     } else if (session.role === "worker") {
       const own = String(session.workerId || "").trim();
       if (!own) {
-        window.location.replace("admin.html");
+        if (titleEl) titleEl.textContent = "Kalendar";
+        if (whoEl) {
+          whoEl.textContent =
+            "Avval ismingizni tanlang: Admin → Kunlik ish → ro‘yxatdan ism tanlang, keyin Kalendar tugmasini bosing.";
+        }
+        if (dayText) {
+          dayText.innerHTML =
+            'Kalendarni ochish uchun <a href="admin.html">Kunlik ish</a> bo‘limida ismingizni tanlang.';
+        }
+        renderGrid();
         return;
       }
       worker = { id: own };
+      if (urlId && urlId !== own) {
+        // Workers may only view their own calendar; ignore foreign ?id=
+        history.replaceState({}, "", "kunlik.html");
+      }
     } else {
       window.location.replace("admin.html");
       return;

@@ -5,10 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Tuproqshunoslik va agrokimyoviy tadqiqotlar instituti — Qashqadaryo bo‘linmasi</title>
   <meta name="description" content="Qashqadaryo viloyati tuproq tahlili, agrokimyoviy tadqiqotlar va laborator hisobotlar." />
+  <link rel="canonical" href="https://ai-ocr.site/" />
+  <link rel="alternate" hreflang="uz" href="https://ai-ocr.site/" />
+  <link rel="alternate" hreflang="ru" href="https://ai-ocr.site/?lang=ru" />
+  <link rel="alternate" hreflang="en" href="https://ai-ocr.site/?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://ai-ocr.site/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20260920f" />
+  <link rel="stylesheet" href="styles.css?v=20260924i" />
 </head>
 <body>
   <header class="site-header">
@@ -54,7 +59,7 @@
       <div class="hero-scrim"></div>
       <div class="hero-content">
         <p class="hero-brand hero-in" data-i18n="brand.institute">Tuproqshunoslik va agrokimyoviy tadqiqotlar instituti</p>
-        <h1 class="hero-in" data-i18n="hero.h1">Viloyat tuproq tahlili — laborator aniqlik bilan</h1>
+        <h1 class="hero-in" data-i18n="hero.h1">Viloyat tuproq tahlili&nbsp;— laborator aniqlik bilan</h1>
         <p class="hero-lead hero-in" data-i18n="hero.lead">
           Qashqadaryo shahar va tumanlaridan olingan namunalarni agrokimyoviy va mexanik tahlil qilamiz,
           amaliy tavsiyalar tayyorlaymiz.
@@ -115,7 +120,43 @@
           <button type="button" class="chip" data-filter="video" data-i18n="gallery.videos">Videolar</button>
         </div>
         <div class="gallery-grid" data-gallery-grid>
-          <p class="muted-note" data-i18n="gallery.loading">Yuklanmoqda...</p>
+          <figure class="gallery-card" data-kind="video" data-reveal>
+            <div class="gallery-media">
+              <div class="gallery-video-wrap" data-gallery-video data-src="media/gallery/g202609241513436765.mp4">
+                <img class="gallery-poster" src="images/gallery/g202609241513436765-poster.png" alt="Tuproqshunoslik va agrokimyo ilmiy tadqiqot institutining innovattsion mobil laboratoriyasi" loading="lazy" width="640" height="400" />
+                <button type="button" class="gallery-play" data-gallery-play aria-label="Ijro etish">
+                  <span class="gallery-play-icon" aria-hidden="true"></span>
+                </button>
+              </div>
+            </div>
+            <figcaption>
+              <strong>Tuproqshunoslik va agrokimyo ilmiy tadqiqot institutining innovattsion mobil laboratoriyasi</strong>
+            </figcaption>
+          </figure>
+          <figure class="gallery-card" data-kind="photo" data-reveal>
+            <div class="gallery-media">
+              <img src="images/gallery/g202608280718369797.jpg" alt="laboratoriya mashinasi" loading="lazy" width="640" height="400" />
+            </div>
+            <figcaption><strong>laboratoriya mashinasi</strong></figcaption>
+          </figure>
+          <figure class="gallery-card" data-kind="photo" data-reveal>
+            <div class="gallery-media">
+              <img src="images/gallery/g202608280718164693.jpg" alt="laboratoriya" loading="lazy" width="640" height="400" />
+            </div>
+            <figcaption><strong>laboratoriya</strong></figcaption>
+          </figure>
+          <figure class="gallery-card" data-kind="photo" data-reveal>
+            <div class="gallery-media">
+              <img src="images/gallery/g202608280717554483.jpg" alt="ish joyi" loading="lazy" width="640" height="400" />
+            </div>
+            <figcaption><strong>ish joyi</strong></figcaption>
+          </figure>
+          <figure class="gallery-card" data-kind="photo" data-reveal>
+            <div class="gallery-media">
+              <img src="images/gallery/g202608280717186256.jpg" alt="tuproqshunoslik laboratoriyasi" loading="lazy" width="640" height="400" />
+            </div>
+            <figcaption><strong>tuproqshunoslik laboratoriyasi</strong></figcaption>
+          </figure>
         </div>
       </div>
     </section>
@@ -125,7 +166,13 @@
         <p class="eyebrow" data-i18n="staff.eyebrow">Rahbariyat</p>
         <h2 data-i18n="staff.h2">Direktor</h2>
         <div class="staff-grid" data-staff-grid>
-          <p class="muted-note" data-i18n="staff.loading">Yuklanmoqda...</p>
+          <article class="staff-block staff-director" data-reveal data-staff-static>
+            <div>
+              <p class="staff-role" data-staff-role data-i18n="staff.director">Direktor</p>
+              <h3 data-staff-name>Bo'riyev Hikmatillo Ruzimurodovich</h3>
+              <p data-staff-bio data-i18n="staff.dirBio">Qashqadaryo bo‘linmasi rahbariyati.</p>
+            </div>
+          </article>
         </div>
       </div>
     </section>
@@ -137,16 +184,11 @@
         <p class="section-intro" data-i18n="videos.intro">Tuproqshunoslik va agrokimyo bo‘yicha tanlangan videolar.</p>
         <div class="video-grid">
           <figure class="video-card" data-reveal>
-            <div class="video-frame">
-              <iframe
-                src="https://www.youtube.com/embed/amt-sPIbgK0"
-                title="Tuproq qanday hosil bo‘ladi"
-                data-i18n-title="videos.soil"
-                loading="lazy"
-                referrerpolicy="strict-origin-when-cross-origin"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowfullscreen
-              ></iframe>
+            <div class="video-frame" data-yt-lazy data-yt-id="amt-sPIbgK0">
+              <img src="https://i.ytimg.com/vi/amt-sPIbgK0/hqdefault.jpg" alt="" loading="lazy" width="480" height="360" />
+              <button type="button" class="gallery-play" data-yt-play aria-label="Ijro etish">
+                <span class="gallery-play-icon" aria-hidden="true"></span>
+              </button>
             </div>
             <figcaption>
               <strong data-i18n="videos.soil">Tuproq qanday hosil bo‘ladi</strong>
@@ -154,16 +196,11 @@
             </figcaption>
           </figure>
           <figure class="video-card" data-reveal>
-            <div class="video-frame">
-              <iframe
-                src="https://www.youtube.com/embed/9-dicqNoODg"
-                title="O‘simlik ildizi va tuproq"
-                data-i18n-title="videos.roots"
-                loading="lazy"
-                referrerpolicy="strict-origin-when-cross-origin"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowfullscreen
-              ></iframe>
+            <div class="video-frame" data-yt-lazy data-yt-id="9-dicqNoODg">
+              <img src="https://i.ytimg.com/vi/9-dicqNoODg/hqdefault.jpg" alt="" loading="lazy" width="480" height="360" />
+              <button type="button" class="gallery-play" data-yt-play aria-label="Ijro etish">
+                <span class="gallery-play-icon" aria-hidden="true"></span>
+              </button>
             </div>
             <figcaption>
               <strong data-i18n="videos.roots">O‘simlik ildizi va tuproq</strong>
@@ -171,16 +208,11 @@
             </figcaption>
           </figure>
           <figure class="video-card" data-reveal>
-            <div class="video-frame">
-              <iframe
-                src="https://www.youtube.com/embed/leHy-Y_8nRs"
-                title="Azot aylanishi"
-                data-i18n-title="videos.n"
-                loading="lazy"
-                referrerpolicy="strict-origin-when-cross-origin"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowfullscreen
-              ></iframe>
+            <div class="video-frame" data-yt-lazy data-yt-id="leHy-Y_8nRs">
+              <img src="https://i.ytimg.com/vi/leHy-Y_8nRs/hqdefault.jpg" alt="" loading="lazy" width="480" height="360" />
+              <button type="button" class="gallery-play" data-yt-play aria-label="Ijro etish">
+                <span class="gallery-play-icon" aria-hidden="true"></span>
+              </button>
             </div>
             <figcaption>
               <strong data-i18n="videos.n">Azot aylanishi</strong>
@@ -284,8 +316,8 @@
     </div>
   </footer>
 
-  <script src="i18n.js?v=20260920"></script>
-  <script src="site.js?v=20260920f"></script>
-  <script src="gallery.js?v=14"></script>
+  <script src="i18n.js?v=20260924i"></script>
+  <script src="site.js?v=20260924i"></script>
+  <script src="gallery.js?v=17"></script>
 </body>
 </html>

@@ -3,6 +3,15 @@ import { setSetting, setting } from "./lib.js";
 import { announceChatIds, broadcastAnnouncement, parseAnnounceText } from "./announce.js";
 import { applyUzbekBotProfile } from "./botLocale.js";
 import { botToken, chatFromUpdate, telegram } from "./telegram.js";
+import {
+  createPanelLoginToken,
+  isPanelButtonText,
+  panelButtonLabel,
+  panelLoginUrl,
+  panelReplyKeyboard,
+  panelRoleForChat,
+  removeReplyKeyboard,
+} from "./panelAuth.js";
 
 const ALLOWED = encodeURIComponent('["message","edited_message","my_chat_member","callback_query"]');
 
@@ -30,27 +39,94 @@ async function upsertChat(update: any) {
   );
 }
 
-async function reply(token: string, chatId: string, text: string) {
+async function reply(
+  token: string,
+  chatId: string,
+  text: string,
+  extra: Record<string, unknown> = {}
+) {
   try {
-    await telegram(token, "sendMessage", "", { chat_id: chatId, text });
+    await telegram(token, "sendMessage", "", {
+      chat_id: chatId,
+      text,
+      ...extra,
+    });
   } catch (err) {
     console.warn("bot reply failed", err);
+  }
+}
+
+async function sendPanelLink(token: string, chatId: string) {
+  const role = await panelRoleForChat(chatId);
+  if (!role) {
+    await reply(
+      token,
+      chatId,
+      "Sizda boshqaruv paneli ruxsati yo‘q. Sayt → Sozlamalar → Telegram botda shu chatni Admin yoki Direktor deb belgilang."
+    );
+    return;
+  }
+  try {
+    const loginToken = await createPanelLoginToken(chatId, role);
+    const url = panelLoginUrl(loginToken);
+    const who = role === "admin" ? "sayt admin" : "direktor";
+    await reply(
+      token,
+      chatId,
+      `Boshqaruv paneli (${who}).\nHavola 5 daqiqa amal qiladi, bir marta ochiladi.`,
+      {
+        reply_markup: {
+          inline_keyboard: [[{ text: "Boshqaruv panelini ochish", url }]],
+        },
+      }
+    );
+  } catch (err) {
+    await reply(token, chatId, err instanceof Error ? err.message : "Havola yaratilmadi.");
   }
 }
 
 async function handleMessage(token: string, chatId: string, text: string) {
   const allowed = await announceChatIds();
   const isAdmin = allowed.has(chatId);
+  const panelRole = await panelRoleForChat(chatId);
   const cmd = text.split(/\s+/)[0].toLowerCase().replace(/@\w+$/, "");
 
+  if (isPanelButtonText(text) || cmd === "/panel") {
+    if (!panelRole) {
+      await reply(
+        token,
+        chatId,
+        "Sizda boshqaruv paneli ruxsati yo‘q. Sozlamalarda shu chatni Admin yoki Direktor deb belgilang.",
+        { reply_markup: removeReplyKeyboard() }
+      );
+      return;
+    }
+    await sendPanelLink(token, chatId);
+    return;
+  }
+
   if (cmd === "/start" || cmd === "/help") {
-    await reply(
-      token,
-      chatId,
-      isAdmin
-        ? "Assalomu alaykum.\n\nE’lon yuborish:\n• botga oddiy xabar yozing\n• yoki: /elon Ertaga soat 9 da yig‘ilish\n\nXabar /start yozgan barcha xodimlarga ketadi."
-        : "Assalomu alaykum.\n\nBu — Qashqadaryo Tuproq Lab boti.\nIshchi uchun /start yetarli.\n\nAdmin e’lon yuborishi uchun sayt sozlamalarida shu chatga «E’lon yubora oladi» ni yoqing."
-    );
+    if (panelRole || isAdmin) {
+      const roleNote =
+        panelRole === "admin"
+          ? "Admin sifatida kirish mumkin."
+          : panelRole === "director"
+            ? "Direktor sifatida kirish mumkin."
+            : "E’lon yuborishingiz mumkin (panel uchun Sozlamalarda Admin/Direktor tanlang).";
+      await reply(
+        token,
+        chatId,
+        `Assalomu alaykum.\n\n${roleNote}\n\nE’lon yuborish:\n• botga oddiy xabar yozing\n• yoki: /elon Ertaga soat 9 da yig‘ilish\n\nTezkor kirish: pastagi «${panelButtonLabel()}» tugmasi yoki /panel`,
+        panelRole ? { reply_markup: panelReplyKeyboard() } : {}
+      );
+    } else {
+      await reply(
+        token,
+        chatId,
+        "Assalomu alaykum.\n\nBu — Qashqadaryo Tuproq Lab boti.\nIshchi uchun /start yetarli.\n\nAdmin/direktor uchun sayt sozlamalarida shu chatni belgilash kerak.",
+        { reply_markup: removeReplyKeyboard() }
+      );
+    }
     return;
   }
 

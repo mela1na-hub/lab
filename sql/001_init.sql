@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS gallery_items (
   title TEXT NOT NULL DEFAULT '',
   caption TEXT NOT NULL DEFAULT '',
   src TEXT NOT NULL DEFAULT '',
+  poster TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL,
   sort_order INTEGER NOT NULL DEFAULT 0
 );

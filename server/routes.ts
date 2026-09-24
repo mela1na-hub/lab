@@ -47,8 +47,8 @@ import {
 } from "./lib.js";
 import { applyUzbekBotProfile } from "./botLocale.js";
 import { botToken, fetchTelegramUpdates, resolveChatId, telegram } from "./telegram.js";
-import { setAnnounceChat } from "./announce.js";
 import { accountPassword, upsertUser } from "./seed.js";
+import { consumePanelLoginToken, setPanelChatRole, type PanelRole } from "./panelAuth.js";
 
 const loginSchema = z.object({
   username: z.string().trim().min(1).max(80),
@@ -198,6 +198,36 @@ export function mountApi(app: Express) {
 
   app.get("/api/site-link", (req, res) => {
     res.json({ ok: true, url: publicOrigin(req.get("host") || undefined, req.protocol) });
+  });
+
+  /** Telegram botdan bir martalik kirish (admin / direktor). */
+  app.get("/api/tg-login", loginLimit, async (req, res) => {
+    const token = String(req.query.t || "").trim();
+    if (!token) {
+      res.status(400).type("html").send("<p>Havola noto‘g‘ri.</p><p><a href=\"/admin.html\">Admin</a></p>");
+      return;
+    }
+    try {
+      const used = await consumePanelLoginToken(token);
+      if (!used) {
+        res
+          .status(400)
+          .type("html")
+          .send(
+            "<p>Havola muddati tugagan yoki allaqachon ishlatilgan.</p><p>Botda «Boshqaruv paneli» ni qayta bosing.</p><p><a href=\"/admin.html\">Admin</a></p>"
+          );
+        return;
+      }
+      const sid = await createSession(used.userId);
+      res.cookie(COOKIE, sid, cookieOptions());
+      const dest = used.role === "admin" ? "/sozlamalar.html" : "/admin.html";
+      res.redirect(302, dest);
+    } catch (err) {
+      res
+        .status(500)
+        .type("html")
+        .send(`<p>${err instanceof Error ? err.message : "Xato"}</p><p><a href="/admin.html">Admin</a></p>`);
+    }
   });
 
   app.post("/api/login", loginLimit, async (req, res) => {
@@ -645,11 +675,27 @@ export function mountApi(app: Express) {
         null;
       const telegram = await resolveWorkerTelegram(String(w.telegram || old?.telegram || ""));
       const id = wid || old?.id || name;
-      let login =
-        String(w.login || old?.login || name)
+      const loginRaw = String(w.login ?? "").trim().toLowerCase();
+      let login: string | null;
+      if (loginRaw) {
+        login = loginRaw;
+      } else if (Object.prototype.hasOwnProperty.call(w, "login")) {
+        login = null;
+      } else {
+        login = String(old?.login || "")
           .trim()
           .toLowerCase() || null;
-      if (login && used.has(login) && login !== old?.login) {
+      }
+      if (login && /\s/.test(login)) {
+        login = login.split(/\s+/).find(Boolean) || null;
+      }
+      if (login && /\s/.test(login)) {
+        return fail(res, 400, `Login bitta so‘z bo‘lishi kerak (bo‘sh joy yo‘q): ${login}`);
+      }
+      if (login && !/^[a-z0-9._-]{2,40}$/.test(login)) {
+        return fail(res, 400, `Login noto‘g‘ri (2–40 belgi, harf/raqam/._-): ${login}`);
+      }
+      if (login && used.has(login) && login !== String(old?.login || "").trim().toLowerCase().split(/\s+/)[0]) {
         return fail(res, 400, `Login band: ${login}`);
       }
       if (login) used.add(login);
@@ -911,13 +957,36 @@ export function mountApi(app: Express) {
   app.post("/api/telegram/chats/announce", requireAuth(["admin"]), async (req, res) => {
     const chatId = String(req.body?.chat_id || "").trim();
     if (!chatId) return fail(res, 400, "chat_id kerak.");
-    await setAnnounceChat(chatId, Boolean(req.body?.enabled));
+    const enabled = Boolean(req.body?.enabled);
+    const roleRaw = String(req.body?.role || "").trim();
+    if (!enabled) {
+      await setPanelChatRole(chatId, null);
+    } else {
+      const role: PanelRole =
+        roleRaw === "admin" || roleRaw === "director" ? roleRaw : "director";
+      await setPanelChatRole(chatId, role);
+    }
+    res.json({ ok: true, chats: await chatsPublic() });
+  });
+
+  app.post("/api/telegram/chats/panel", requireAuth(["admin"]), async (req, res) => {
+    const chatId = String(req.body?.chat_id || "").trim();
+    if (!chatId) return fail(res, 400, "chat_id kerak.");
+    const roleRaw = String(req.body?.role || "").trim();
+    if (!roleRaw) {
+      await setPanelChatRole(chatId, null);
+    } else if (roleRaw === "admin" || roleRaw === "director") {
+      await setPanelChatRole(chatId, roleRaw);
+    } else {
+      return fail(res, 400, "role: admin yoki director.");
+    }
     res.json({ ok: true, chats: await chatsPublic() });
   });
 
   app.post("/api/telegram/chats/delete", requireAuth(["admin"]), async (req, res) => {
     const chatId = String(req.body?.chat_id || "").trim();
     if (!chatId) return fail(res, 400, "chat_id kerak.");
+    await setPanelChatRole(chatId, null);
     const { rowCount } = await query(`DELETE FROM telegram_chats WHERE chat_id = $1`, [chatId]);
     if (!rowCount) return fail(res, 404, "Chat topilmadi.");
     res.json({ ok: true, chats: await chatsPublic() });
@@ -1082,12 +1151,12 @@ export function mountApi(app: Express) {
     const id = galleryId();
     const createdAt = new Date().toISOString().slice(0, 16).replace("T", " ");
     await query(
-      `INSERT INTO gallery_items (id, type, title, caption, src, created_at, sort_order)
-       VALUES ($1,'youtube',$2,$3,$4,$5,0)`,
+      `INSERT INTO gallery_items (id, type, title, caption, src, poster, created_at, sort_order)
+       VALUES ($1,'youtube',$2,$3,$4,'',$5,0)`,
       [id, title, caption, yt, createdAt]
     );
     await bumpGalleryV();
-    const item = { id, type: "youtube", title, caption, src: yt, createdAt };
+    const item = { id, type: "youtube", title, caption, src: yt, poster: "", createdAt };
     res.json({ ok: true, item, gallery: await galleryItems() });
   });
 
@@ -1133,27 +1202,84 @@ export function mountApi(app: Express) {
       fs.writeFileSync(dest, bytes);
       const createdAt = new Date().toISOString().slice(0, 16).replace("T", " ");
       await query(
-        `INSERT INTO gallery_items (id, type, title, caption, src, created_at, sort_order)
-         VALUES ($1,$2,$3,$4,$5,$6,0)`,
+        `INSERT INTO gallery_items (id, type, title, caption, src, poster, created_at, sort_order)
+         VALUES ($1,$2,$3,$4,$5,'',$6,0)`,
         [id, kind, title, caption, rel, createdAt]
       );
       await bumpGalleryV();
-      const item = { id, type: kind, title, caption, src: rel, createdAt };
+      const item = { id, type: kind, title, caption, src: rel, poster: "", createdAt };
       res.json({ ok: true, item, gallery: await galleryItems() });
     }
   );
 
+  app.post("/api/gallery/poster", requireAuth(["admin"]), async (req, res) => {
+    const id = String(req.body?.id || "").trim();
+    if (!/^g[A-Za-z0-9]+$/.test(id)) return fail(res, 400, "Noto'g'ri id.");
+    const { rows } = await query<{ src: string; type: string; poster: string }>(
+      `SELECT src, type, COALESCE(poster, '') AS poster FROM gallery_items WHERE id = $1`,
+      [id]
+    );
+    if (!rows[0]) return fail(res, 404, "Topilmadi.");
+    if (!["video", "youtube"].includes(rows[0].type)) {
+      return fail(res, 400, "Thumbnail faqat video yoki YouTube uchun.");
+    }
+    const name = String(req.body?.filename || "").trim();
+    let ext = path.extname(name).toLowerCase();
+    const ctype = String(req.body?.type || "").toLowerCase();
+    if (![".png", ".jpg", ".jpeg", ".webp", ".gif"].includes(ext)) {
+      if (ctype === "image/png") ext = ".png";
+      else if (ctype === "image/jpeg") ext = ".jpg";
+      else if (ctype === "image/webp") ext = ".webp";
+      else if (ctype === "image/gif") ext = ".gif";
+      else return fail(res, 400, "Faqat PNG, JPG, WEBP yoki GIF.");
+    }
+    let b64 = String(req.body?.data || "").replace(/^data:image\/[^;]+;base64,/, "");
+    const bytes = Buffer.from(b64, "base64");
+    if (bytes.length < 32 || bytes.length > 8 * 1024 * 1024) {
+      return fail(res, 400, "Rasm hajmi noto'g'ri (maks. 8 MB).");
+    }
+    const oldPoster = String(rows[0].poster || "").trim();
+    if (oldPoster.startsWith("images/gallery/")) {
+      const oldFull = path.join(ROOT, ...oldPoster.split("/"));
+      if (oldFull.startsWith(ROOT) && fs.existsSync(oldFull)) {
+        try {
+          fs.unlinkSync(oldFull);
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    const rel = `images/gallery/${id}-poster${ext}`;
+    const dest = path.join(ROOT, ...rel.split("/"));
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, bytes);
+    await query(`UPDATE gallery_items SET poster = $2 WHERE id = $1`, [id, rel]);
+    await bumpGalleryV();
+    res.json({ ok: true, poster: rel, gallery: await galleryItems() });
+  });
+
   app.post("/api/gallery/delete", requireAuth(["admin"]), async (req, res) => {
     const id = String(req.body?.id || "").trim();
     if (!/^g[A-Za-z0-9]+$/.test(id)) return fail(res, 400, "Noto'g'ri id.");
-    const { rows } = await query<{ src: string; type: string }>(
-      `SELECT src, type FROM gallery_items WHERE id = $1`,
+    const { rows } = await query<{ src: string; type: string; poster: string }>(
+      `SELECT src, type, COALESCE(poster, '') AS poster FROM gallery_items WHERE id = $1`,
       [id]
     );
     if (!rows[0]) return fail(res, 404, "Topilmadi.");
     if (rows[0].type !== "youtube" && rows[0].src) {
       const full = path.join(ROOT, rows[0].src.replace(/\//g, path.sep));
       if (full.startsWith(ROOT) && fs.existsSync(full)) fs.unlinkSync(full);
+    }
+    const poster = String(rows[0].poster || "").trim();
+    if (poster.startsWith("images/gallery/")) {
+      const full = path.join(ROOT, ...poster.split("/"));
+      if (full.startsWith(ROOT) && fs.existsSync(full)) {
+        try {
+          fs.unlinkSync(full);
+        } catch {
+          /* ignore */
+        }
+      }
     }
     await query(`DELETE FROM gallery_items WHERE id = $1`, [id]);
     await bumpGalleryV();

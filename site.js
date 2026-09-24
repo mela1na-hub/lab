@@ -201,20 +201,62 @@
 
   function renderStaff() {
     if (!staffGrid) return;
+    const existing = staffGrid.querySelector("[data-staff-static]");
     if (!staffData) {
+      if (existing) return;
       staffGrid.innerHTML = `<p class="muted-note">${tx("staff.missing")}</p>`;
       return;
     }
     const dir = staffData.director || {};
-    const photo = dir.photo
-      ? `<img class="staff-photo" src="${escapeHtml(dir.photo)}" alt="" />`
+    const name = dir.name || tx("staff.dirFallback");
+    const role = staffRole(dir.role, "staff.director");
+    const bio = String(dir.bio || "").trim() || tx("staff.dirBio");
+    const photoSrc = String(dir.photo || "").trim();
+
+    if (existing) {
+      existing.classList.toggle("has-photo", Boolean(photoSrc));
+      let img = existing.querySelector(".staff-photo");
+      if (photoSrc) {
+        if (!img) {
+          img = document.createElement("img");
+          img.className = "staff-photo";
+          img.alt = "";
+          existing.insertBefore(img, existing.firstChild);
+        }
+        img.src = photoSrc;
+      } else if (img) {
+        img.remove();
+      }
+      const roleEl = existing.querySelector("[data-staff-role]");
+      const nameEl = existing.querySelector("[data-staff-name]");
+      const bioEl = existing.querySelector("[data-staff-bio]");
+      if (roleEl) {
+        roleEl.textContent = role;
+        if (dir.role && !/^direktor$/i.test(String(dir.role).trim())) {
+          roleEl.removeAttribute("data-i18n");
+        } else {
+          roleEl.setAttribute("data-i18n", "staff.director");
+        }
+      }
+      if (nameEl) nameEl.textContent = name;
+      if (bioEl) {
+        bioEl.textContent = bio;
+        if (String(dir.bio || "").trim()) bioEl.removeAttribute("data-i18n");
+        else bioEl.setAttribute("data-i18n", "staff.dirBio");
+      }
+      if (typeof watchReveal === "function") watchReveal(staffGrid);
+      return;
+    }
+
+    const photo = photoSrc
+      ? `<img class="staff-photo" src="${escapeHtml(photoSrc)}" alt="" />`
       : "";
-    staffGrid.innerHTML = `<article class="staff-block staff-director${photo ? " has-photo" : ""}" data-reveal>
+    staffGrid.innerHTML = `<article class="staff-block staff-director${photo ? " has-photo" : ""}" data-reveal data-staff-static>
           ${photo}
           <div>
-            <p class="staff-role">${escapeHtml(staffRole(dir.role, "staff.director"))}</p>
-            <h3>${escapeHtml(dir.name || tx("staff.dirFallback"))}</h3>
-            <p>${escapeHtml(dir.bio || tx("staff.dirBio"))}</p>
+            <p class="staff-role" data-staff-role>${escapeHtml(role)}</p>
+            <h3 data-staff-name>${escapeHtml(name)}</h3>
+            <p data-staff-bio>${escapeHtml(bio)}</p>
           </div>
         </article>`;
     if (typeof watchReveal === "function") watchReveal(staffGrid);
@@ -224,21 +266,27 @@
     fetch("data/staff.json", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((staff) => {
-        if (!staff) {
-          staffData = null;
-          renderStaff();
-          return;
-        }
+        if (!staff) return;
         staffData = staff;
         renderStaff();
       })
       .catch(() => {
-        staffGrid.innerHTML = `<p class="muted-note">${tx("staff.error")}</p>`;
+        /* static HTML qoladi */
       });
   }
 
   window.addEventListener("ttati:lang", () => {
     if (staffGrid && staffData) renderStaff();
+  });
+
+  document.querySelectorAll("[data-yt-lazy]").forEach((frame) => {
+    const id = frame.getAttribute("data-yt-id");
+    const playBtn = frame.querySelector("[data-yt-play]");
+    if (!id || !playBtn) return;
+    playBtn.addEventListener("click", () => {
+      const title = frame.closest("figure")?.querySelector("strong")?.textContent || "YouTube";
+      frame.innerHTML = `<iframe src="https://www.youtube.com/embed/${encodeURIComponent(id)}?autoplay=1" title="${escapeHtml(title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+    });
   });
 
   const revealIo = new IntersectionObserver(

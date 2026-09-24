@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=29" />
+  <link rel="stylesheet" href="styles.css?v=44" />
 </head>
 <body class="page-admin" data-site-admin>
   <header class="site-header">
@@ -23,6 +23,10 @@
       </a>
       <div class="header-actions">
         <div class="lang-switch" data-lang-switch></div>
+        <div class="admin-header-session" data-admin-session hidden>
+          <p class="admin-header-role">Siz: <strong data-session-role></strong></p>
+          <button class="btn btn-ghost" type="button" data-logout>Chiqish</button>
+        </div>
         <a class="btn btn-ghost" href="index.html" data-i18n="nav.back">Saytga qaytish</a>
       </div>
     </div>
@@ -53,213 +57,108 @@
         <aside class="admin-sidebar">
           <p class="admin-sidebar-title">Sozlamalar</p>
           <nav class="admin-side-nav" data-admin-nav-list>
-            <button type="button" data-admin-nav="appeals">Murojaatlar</button>
-            <button type="button" class="is-active" data-admin-nav="passwords">Kirish parollari</button>
-            <button type="button" data-admin-nav="workers">Ishchilar</button>
+            <button type="button" class="is-active" data-admin-nav="workers">Hodimlar</button>
             <button type="button" data-admin-nav="telegram">Telegram bot</button>
-            <button type="button" data-admin-nav="hero">Bosh sahifa rasmi</button>
-            <button type="button" data-admin-nav="contact">Aloqa</button>
-            <button type="button" data-admin-nav="gallery">Galereya</button>
-            <button type="button" data-admin-nav="director">Direktor</button>
-            <button type="button" data-admin-nav="reports">Hisobotlar</button>
+            <div class="admin-nav-group" data-admin-nav-group="home">
+              <button type="button" class="admin-nav-group-toggle" data-admin-nav-group-toggle aria-expanded="false">
+                Bosh sahifa
+                <span class="admin-nav-chevron" aria-hidden="true"></span>
+              </button>
+              <div class="admin-nav-sub" data-admin-nav-sub hidden>
+                <button type="button" data-admin-nav="hero">Rasm</button>
+                <button type="button" data-admin-nav="gallery">Galereya</button>
+                <button type="button" data-admin-nav="director">Direktor</button>
+                <button type="button" data-admin-nav="reports">Hisobotlar</button>
+                <button type="button" data-admin-nav="contact">Aloqa</button>
+              </div>
+            </div>
+            <button type="button" data-admin-nav="passwords">Kirish parollari</button>
+            <button type="button" data-admin-nav="appeals">Murojaatlar</button>
           </nav>
-          <div class="admin-sidebar-foot">
-            <p>Siz: <strong data-session-role></strong></p>
-            <button class="btn btn-ghost" type="button" data-logout>Chiqish</button>
-          </div>
         </aside>
         <div class="admin-stage">
           <div class="admin-stage-head">
             <button class="admin-nav-toggle" type="button" data-admin-nav-toggle>Bo‘limlar</button>
-            <h1 data-admin-pane-title>Kirish parollari</h1>
+            <h1 data-admin-pane-title>Hodimlar</h1>
           </div>
           <div class="admin-panels" data-site-panels>
-          <div class="admin-card admin-wide admin-pane" data-admin-pane="appeals" hidden>
-            <h2>Murojaatlar</h2>
-            <p class="muted-note">Saytdagi forma orqali yuborilgan savol va buyurtmalar. Yangilari tepada.</p>
-            <p class="admin-actions">
-              <button class="btn btn-ghost" type="button" data-appeals-refresh>Yangilash</button>
-            </p>
-            <p class="form-note" data-appeals-status></p>
-            <ul class="admin-list" data-appeal-list></ul>
-          </div>
-
-          <div class="admin-card admin-pane is-active" data-admin-pane="passwords">
-            <h2>Kirish parollari</h2>
-            <p class="muted-note">Sayt sozlamalari, direktor va ishchi panellari uchun. Login: <code>admin</code>, <code>director</code>, <code>ishchi</code> yoki ishchi ismi. Boshlang‘ich parol: login + <code>123</code> (<code>admin123</code>).</p>
-            <form class="stack-form" data-password-form autocomplete="off">
-              <label>
-                Hozirgi sayt admin paroli
-                <input type="password" name="currentPassword" required autocomplete="current-password" />
+          <div class="admin-card admin-wide admin-pane is-active" data-admin-pane="workers">
+            <div class="admin-pane-toolbar">
+              <h2>Hodimlar</h2>
+              <button class="btn btn-primary" type="button" data-worker-open>Hodim qo‘shish</button>
+            </div>
+            <div class="admin-table-tools" data-worker-tools hidden>
+              <label class="admin-table-search">
+                <span class="sr-only">Qidirish</span>
+                <select data-worker-search-field>
+                  <option value="name">Ism</option>
+                  <option value="lavozim">Lavozim</option>
+                  <option value="telegram">Telegram</option>
+                  <option value="login">Login</option>
+                </select>
+                <input type="search" data-worker-search placeholder="Qidirish..." autocomplete="off" />
               </label>
-              <label>
-                Yangi sayt admin paroli
-                <input type="password" name="adminPassword" minlength="8" autocomplete="new-password" />
-              </label>
-              <label>
-                Sayt admin parolini takrorlang
-                <input type="password" name="adminPassword2" minlength="8" autocomplete="new-password" />
-              </label>
-              <label>
-                Yangi direktor paroli
-                <input type="password" name="directorPassword" minlength="8" autocomplete="new-password" />
-              </label>
-              <label>
-                Direktor parolini takrorlang
-                <input type="password" name="directorPassword2" minlength="8" autocomplete="new-password" />
-              </label>
-              <label>
-                Yangi ishchi paroli
-                <input type="password" name="workerPassword" minlength="8" autocomplete="new-password" />
-              </label>
-              <label>
-                Ishchi parolini takrorlang
-                <input type="password" name="workerPassword2" minlength="8" autocomplete="new-password" />
-              </label>
-              <button class="btn btn-primary" type="submit">Parollarni saqlash</button>
-              <p class="form-note" data-password-status></p>
-            </form>
-          </div>
-
-          <div class="admin-card admin-wide admin-pane" data-admin-pane="workers" hidden>
-            <h2>Ishchilar</h2>
-            <form class="stack-form" data-worker-form>
-              <input type="hidden" name="id" />
-              <label>
-                Ism
-                <input type="text" name="name" required />
-              </label>
-              <label>
-                Lavozim
-                <input type="text" name="lavozim" required />
-              </label>
-              <label>
-                Telegram chat_id (ixtiyoriy)
-                <input type="text" name="telegram" placeholder="123456789" />
-              </label>
-              <label>
-                Login (ixtiyoriy)
-                <input type="text" name="login" autocomplete="off" placeholder="masalan: ali" />
-              </label>
-              <label>
-                Parol (ixtiyoriy)
-                <input type="password" name="password" autocomplete="new-password" minlength="8" />
-              </label>
-              <p class="muted-note">Login bersangiz, ishchi o‘z akkaunti bilan kiradi. Bo‘sh qoldirsangiz, umumiy <code>ishchi</code> loginidan kirib ismini tanlaydi. @username yetarli emas — chat_id ni pastdan nusxalang.</p>
-              <button class="btn btn-primary" type="submit">Saqlash</button>
-            </form>
-            <ul class="admin-list" data-worker-list></ul>
+              <button class="btn btn-ghost" type="button" data-worker-search-clear>Tozalash</button>
+              <p class="muted-note admin-table-count" data-worker-count></p>
+            </div>
+            <div class="admin-table-wrap" data-worker-list></div>
           </div>
 
           <div class="admin-card admin-wide admin-pane" data-admin-pane="telegram" hidden>
-            <h2>Telegram bot</h2>
-            <ol class="admin-help">
-              <li>BotFather’dan token oling va saqlang.</li>
-              <li>Har bir ishchi o‘z telefonida botni ochib <code>/start</code> yozadi.</li>
-              <li>Admin o‘z Telegramidan botga <code>/start</code> yozadi, pastda «E’lon yubora oladi» ni yoqadi.</li>
-              <li>Keyin website ochmasdan botga xabar yozing — e’lon /start yozganlarning hammaga ketadi. Masalan: <code>/elon Ertaga soat 9 da yig‘ilish</code></li>
-            </ol>
-            <form class="stack-form" data-token-form>
-              <label>
-                Bot token
-                <input type="password" name="token" autocomplete="off" placeholder="123456:ABC..." />
+            <div class="admin-pane-toolbar">
+              <h2>Chatlar</h2>
+              <div class="admin-pane-toolbar-actions">
+                <button class="btn btn-primary" type="button" data-tg-settings-open>Telegram bot sozlamalari</button>
+                <button class="btn btn-ghost" type="button" data-refresh-chats>Chatlarni yangilash</button>
+              </div>
+            </div>
+            <div class="admin-table-tools" data-chat-tools hidden>
+              <label class="admin-table-search">
+                <span class="sr-only">Qidirish</span>
+                <select data-chat-search-field>
+                  <option value="name">Ism</option>
+                  <option value="username">Username</option>
+                  <option value="id">chat_id</option>
+                  <option value="role">Rol</option>
+                </select>
+                <input type="search" data-chat-search placeholder="Qidirish..." autocomplete="off" />
               </label>
-              <button class="btn btn-primary" type="submit">Tokenni tekshirish va saqlash</button>
-              <p class="muted-note" data-token-status></p>
-            </form>
-            <button class="btn btn-ghost" type="button" data-refresh-chats>Chatlarni yangilash</button>
-            <ul class="admin-list" data-chat-list></ul>
+              <button class="btn btn-ghost" type="button" data-chat-search-clear>Tozalash</button>
+              <p class="muted-note admin-table-count" data-chat-count></p>
+            </div>
+            <div class="admin-table-wrap" data-chat-list></div>
           </div>
 
           <div class="admin-card admin-wide admin-pane" data-admin-pane="hero" hidden>
-            <h2>Bosh sahifa rasmi</h2>
-            <p class="muted-note">Hero fon rasmini almashtirish. PNG, JPG, WEBP — max 8 MB.</p>
-            <img class="media-preview" data-preview-hero src="images/bo-linma.png" alt="Bosh sahifa rasmi" />
-            <form class="stack-form" data-hero-form>
-              <label>
-                Yangi rasm
-                <input type="file" name="image" accept="image/png,image/jpeg,image/webp,image/gif" required />
-              </label>
-              <button class="btn btn-primary" type="submit">Rasmni saqlash</button>
-              <p class="form-note" data-hero-status></p>
-            </form>
-          </div>
-
-          <div class="admin-card admin-wide admin-pane" data-admin-pane="contact" hidden>
-            <h2>Aloqa ma’lumotlari</h2>
-            <p class="muted-note">Telefon, email, manzil va xarita. Bosh sahifadagi Aloqa bo‘limida ko‘rinadi.</p>
-            <form class="stack-form" data-contact-admin-form>
-              <div class="form-grid">
-                <label>
-                  Telefon
-                  <input type="text" name="phone" required placeholder="+998 71 246-09-50" />
-                </label>
-                <label>
-                  Email
-                  <input type="email" name="email" required placeholder="info@soil.uz" />
-                </label>
-                <label class="span-2">
-                  Manzil
-                  <input type="text" name="address" required />
-                </label>
-                <label>
-                  Xarita sarlavhasi
-                  <input type="text" name="title" placeholder="Qarshi bo‘linmasi" />
-                </label>
-                <label>
-                  Kenglik (lat)
-                  <input type="text" name="lat" required placeholder="38.892663" />
-                </label>
-                <label>
-                  Uzunlik (lng)
-                  <input type="text" name="lng" required placeholder="65.810101" />
-                </label>
+            <div class="admin-pane-toolbar">
+              <h2>Bosh sahifa rasmi</h2>
+              <div class="admin-pane-toolbar-actions">
+                <button class="btn btn-primary" type="button" data-hero-open>Rasmni almashtirish</button>
+                <a class="btn btn-ghost" href="index.html">Saytda ko‘rish</a>
               </div>
-              <button class="btn btn-primary" type="submit">Aloqani saqlash</button>
-              <p class="form-note" data-contact-admin-status></p>
-            </form>
-            <p class="admin-actions">
-              <a class="btn btn-ghost" href="index.html#aloqa">Saytda ko‘rish</a>
-            </p>
+            </div>
+            <div class="admin-hero-compact">
+              <img class="admin-hero-thumb" data-preview-hero src="images/bo-linma.png" alt="Bosh sahifa rasmi" />
+              <div class="admin-hero-meta">
+                <p class="admin-hero-label">Joriy hero fon</p>
+                <p class="muted-note" data-hero-path>images/bo-linma.png</p>
+                <p class="form-note" data-hero-status></p>
+              </div>
+            </div>
           </div>
 
           <div class="admin-card admin-wide admin-pane" data-admin-pane="gallery" hidden>
-            <h2>Galereya — rasm va video</h2>
-            <p class="muted-note">Bosh sahifadagi galereyaga foto, MP4 video (max 80 MB) yoki YouTube havolasi qo‘shiladi.</p>
-            <form class="stack-form" data-gallery-form>
-              <div class="form-grid">
-                <label>
-                  Sarlavha
-                  <input type="text" name="title" required />
-                </label>
-                <label>
-                  Turi
-                  <select name="kind" data-gallery-kind>
-                    <option value="photo">Rasm</option>
-                    <option value="video">Video fayl</option>
-                    <option value="youtube">YouTube</option>
-                  </select>
-                </label>
-                <label class="span-2">
-                  Izoh
-                  <input type="text" name="caption" placeholder="Qisqa tavsif (ixtiyoriy)" />
-                </label>
-                <label class="span-2" data-gallery-file-wrap>
-                  Fayl
-                  <input type="file" name="file" accept="image/png,image/jpeg,image/webp,image/gif" />
-                </label>
-                <label class="span-2" data-gallery-url-wrap hidden>
-                  YouTube havolasi
-                  <input type="url" name="url" placeholder="https://youtu.be/..." />
-                </label>
+            <div class="admin-pane-toolbar">
+              <h2>Galereya</h2>
+              <div class="admin-pane-toolbar-actions">
+                <button class="btn btn-primary" type="button" data-gallery-open>Galereya qo‘shish</button>
+                <a class="btn btn-ghost" href="index.html#galereya">Saytda ko‘rish</a>
               </div>
-              <button class="btn btn-primary" type="submit">Galereyaga qo‘shish</button>
-              <p class="form-note" data-gallery-status></p>
-            </form>
-            <ul class="admin-list" data-gallery-list></ul>
-            <p class="admin-actions">
-              <a class="btn btn-ghost" href="index.html#galereya">Saytda ko‘rish</a>
-            </p>
+            </div>
+            <div class="admin-table-tools" data-gallery-tools hidden>
+              <p class="muted-note admin-table-count" data-gallery-count></p>
+            </div>
+            <div class="admin-table-wrap" data-gallery-list></div>
           </div>
 
           <div class="admin-card admin-wide admin-pane" data-admin-pane="director" hidden>
@@ -303,11 +202,296 @@
               <a class="btn btn-ghost" href="hisobotlar.html">Saytda ko‘rish</a>
             </p>
           </div>
+
+          <div class="admin-card admin-wide admin-pane" data-admin-pane="passwords" hidden>
+            <div class="admin-pane-toolbar">
+              <h2>Kirish parollari</h2>
+              <div class="admin-pane-toolbar-actions">
+                <button class="btn btn-primary" type="button" data-password-open>Parolni o‘zgartirish</button>
+              </div>
+            </div>
+            <div class="admin-table-wrap">
+              <table class="admin-data-table admin-password-table">
+                <thead>
+                  <tr>
+                    <th scope="col">№</th>
+                    <th scope="col">Rol</th>
+                    <th scope="col">Login</th>
+                    <th scope="col">Boshlang‘ich parol</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="col-num">1</td>
+                    <td class="col-name">Sayt admin</td>
+                    <td class="col-mono"><code>admin</code></td>
+                    <td class="col-mono"><code>admin123</code></td>
+                  </tr>
+                  <tr>
+                    <td class="col-num">2</td>
+                    <td class="col-name">Direktor</td>
+                    <td class="col-mono"><code>director</code></td>
+                    <td class="col-mono"><code>director123</code></td>
+                  </tr>
+                  <tr>
+                    <td class="col-num">3</td>
+                    <td class="col-name">Ishchi (umumiy)</td>
+                    <td class="col-mono"><code>ishchi</code></td>
+                    <td class="col-mono"><code>ishchi123</code></td>
+                  </tr>
+                  <tr>
+                    <td class="col-num">4</td>
+                    <td class="col-name">Hodim akkaunti</td>
+                    <td class="col-mono">o‘z logini</td>
+                    <td class="col-mono">login + <code>123</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="muted-note admin-password-hint">Parol o‘zgartirish uchun joriy <code>admin</code> paroli kerak. Yangilangan loginlar yangi parol bilan kiradi.</p>
+            <p class="form-note" data-password-status></p>
+          </div>
+
+          <div class="admin-card admin-wide admin-pane" data-admin-pane="contact" hidden>
+            <h2>Aloqa ma’lumotlari</h2>
+            <p class="muted-note">Telefon, email, manzil va xarita. Bosh sahifadagi Aloqa bo‘limida ko‘rinadi.</p>
+            <form class="stack-form" data-contact-admin-form>
+              <div class="form-grid">
+                <label>
+                  Telefon
+                  <input type="text" name="phone" required placeholder="+998 71 246-09-50" />
+                </label>
+                <label>
+                  Email
+                  <input type="email" name="email" required placeholder="info@soil.uz" />
+                </label>
+                <label class="span-2">
+                  Manzil
+                  <input type="text" name="address" required />
+                </label>
+                <label>
+                  Xarita sarlavhasi
+                  <input type="text" name="title" placeholder="Qarshi bo‘linmasi" />
+                </label>
+                <label>
+                  Kenglik (lat)
+                  <input type="text" name="lat" required placeholder="38.892663" />
+                </label>
+                <label>
+                  Uzunlik (lng)
+                  <input type="text" name="lng" required placeholder="65.810101" />
+                </label>
+              </div>
+              <button class="btn btn-primary" type="submit">Aloqani saqlash</button>
+              <p class="form-note" data-contact-admin-status></p>
+            </form>
+            <p class="admin-actions">
+              <a class="btn btn-ghost" href="index.html#aloqa">Saytda ko‘rish</a>
+            </p>
+          </div>
+
+          <div class="admin-card admin-wide admin-pane" data-admin-pane="appeals" hidden>
+            <h2>Murojaatlar</h2>
+            <p class="muted-note">Saytdagi forma orqali yuborilgan savol va buyurtmalar. Yangilari tepada.</p>
+            <p class="admin-actions">
+              <button class="btn btn-ghost" type="button" data-appeals-refresh>Yangilash</button>
+            </p>
+            <p class="form-note" data-appeals-status></p>
+            <ul class="admin-list" data-appeal-list></ul>
+          </div>
         </div>
         </div>
       </div>
     </section>
   </main>
+
+  <div class="admin-modal" data-tg-settings-modal hidden>
+    <div class="admin-modal-backdrop" data-tg-settings-close tabindex="-1"></div>
+    <div class="admin-modal-dialog admin-modal-dialog-wide" role="dialog" aria-modal="true" aria-labelledby="tg-settings-title">
+      <div class="admin-modal-head">
+        <h2 id="tg-settings-title">Telegram bot sozlamalari</h2>
+        <button class="admin-modal-x" type="button" data-tg-settings-close aria-label="Yopish">×</button>
+      </div>
+      <details class="admin-help-fold" open>
+        <summary>Qanday ulanadi?</summary>
+        <ol class="admin-help">
+          <li>BotFather’dan token oling va saqlang.</li>
+          <li>Har bir ishchi o‘z telefonida botni ochib <code>/start</code> yozadi.</li>
+          <li>Admin yoki direktor botga <code>/start</code> yozadi, pastda shu chatni <strong>Admin</strong> yoki <strong>Direktor</strong> deb belgilaysiz.</li>
+          <li>Belgilangan chatda botda <strong>Boshqaruv paneli</strong> tugmasi chiqadi — bir marta bosib saytga parolsiz kiradi (havola 5 daqiqa).</li>
+          <li>E’lon: botga oddiy xabar yoki <code>/elon Ertaga soat 9 da yig‘ilish</code></li>
+        </ol>
+      </details>
+      <form class="stack-form" data-token-form>
+        <label>
+          Bot token
+          <input type="password" name="token" autocomplete="off" placeholder="123456:ABC..." />
+        </label>
+        <button class="btn btn-primary" type="submit">Tokenni saqlash</button>
+        <p class="form-note" data-token-status></p>
+      </form>
+      <div class="admin-modal-actions">
+        <button class="btn btn-ghost" type="button" data-tg-settings-close>Yopish</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-modal" data-password-modal hidden>
+    <div class="admin-modal-backdrop" data-password-modal-close tabindex="-1"></div>
+    <div class="admin-modal-dialog admin-modal-dialog-wide" role="dialog" aria-modal="true" aria-labelledby="password-modal-title">
+      <div class="admin-modal-head">
+        <h2 id="password-modal-title">Parolni o‘zgartirish</h2>
+        <button class="admin-modal-x" type="button" data-password-modal-close aria-label="Yopish">×</button>
+      </div>
+      <p class="muted-note">Faqat o‘zgartirmoqchi bo‘lgan parolni to‘ldiring. Kamida 8 belgi.</p>
+      <form class="stack-form" data-password-form autocomplete="off">
+        <label>
+          Hozirgi sayt admin paroli
+          <input type="password" name="currentPassword" required autocomplete="current-password" />
+        </label>
+        <div class="form-grid">
+          <label>
+            Yangi sayt admin paroli
+            <input type="password" name="adminPassword" minlength="8" autocomplete="new-password" />
+          </label>
+          <label>
+            Takrorlang
+            <input type="password" name="adminPassword2" minlength="8" autocomplete="new-password" />
+          </label>
+          <label>
+            Yangi direktor paroli
+            <input type="password" name="directorPassword" minlength="8" autocomplete="new-password" />
+          </label>
+          <label>
+            Takrorlang
+            <input type="password" name="directorPassword2" minlength="8" autocomplete="new-password" />
+          </label>
+          <label>
+            Yangi ishchi paroli
+            <input type="password" name="workerPassword" minlength="8" autocomplete="new-password" />
+          </label>
+          <label>
+            Takrorlang
+            <input type="password" name="workerPassword2" minlength="8" autocomplete="new-password" />
+          </label>
+        </div>
+        <p class="form-note" data-password-modal-status></p>
+        <div class="admin-modal-actions">
+          <button class="btn btn-ghost" type="button" data-password-modal-close>Bekor</button>
+          <button class="btn btn-primary" type="submit">Saqlash</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-modal" data-hero-modal hidden>
+    <div class="admin-modal-backdrop" data-hero-modal-close tabindex="-1"></div>
+    <div class="admin-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="hero-modal-title">
+      <div class="admin-modal-head">
+        <h2 id="hero-modal-title">Bosh sahifa rasmini almashtirish</h2>
+        <button class="admin-modal-x" type="button" data-hero-modal-close aria-label="Yopish">×</button>
+      </div>
+      <p class="muted-note">PNG, JPG, WEBP yoki GIF — max 8 MB.</p>
+      <form class="stack-form" data-hero-form>
+        <label>
+          Yangi rasm
+          <input type="file" name="image" accept="image/png,image/jpeg,image/webp,image/gif" required />
+        </label>
+        <p class="form-note" data-hero-modal-status></p>
+        <div class="admin-modal-actions">
+          <button class="btn btn-ghost" type="button" data-hero-modal-close>Bekor</button>
+          <button class="btn btn-primary" type="submit">Saqlash</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-modal" data-gallery-modal hidden>
+    <div class="admin-modal-backdrop" data-gallery-modal-close tabindex="-1"></div>
+    <div class="admin-modal-dialog admin-modal-dialog-wide" role="dialog" aria-modal="true" aria-labelledby="gallery-modal-title">
+      <div class="admin-modal-head">
+        <h2 id="gallery-modal-title">Galereya qo‘shish</h2>
+        <button class="admin-modal-x" type="button" data-gallery-modal-close aria-label="Yopish">×</button>
+      </div>
+      <p class="muted-note">Foto, MP4 video (max 80 MB) yoki YouTube havolasi.</p>
+      <form class="stack-form" data-gallery-form>
+        <div class="form-grid">
+          <label>
+            Sarlavha
+            <input type="text" name="title" required />
+          </label>
+          <label>
+            Turi
+            <select name="kind" data-gallery-kind>
+              <option value="photo">Rasm</option>
+              <option value="video">Video fayl</option>
+              <option value="youtube">YouTube</option>
+            </select>
+          </label>
+          <label class="span-2">
+            Izoh
+            <input type="text" name="caption" placeholder="Qisqa tavsif (ixtiyoriy)" />
+          </label>
+          <label class="span-2" data-gallery-file-wrap>
+            Fayl
+            <input type="file" name="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+          </label>
+          <label class="span-2" data-gallery-url-wrap hidden>
+            YouTube havolasi
+            <input type="url" name="url" placeholder="https://youtu.be/..." />
+          </label>
+          <label class="span-2" data-gallery-poster-wrap hidden>
+            Thumbnail rasm (ixtiyoriy)
+            <input type="file" name="poster" accept="image/png,image/jpeg,image/webp,image/gif" />
+            <span class="muted-note">Video/YouTube kartasida ko‘rinadigan rasm. PNG, JPG, WEBP — max 8 MB.</span>
+          </label>
+        </div>
+        <p class="form-note" data-gallery-status></p>
+        <div class="admin-modal-actions">
+          <button class="btn btn-ghost" type="button" data-gallery-modal-close>Bekor</button>
+          <button class="btn btn-primary" type="submit">Qo‘shish</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-modal" data-worker-modal hidden>
+    <div class="admin-modal-backdrop" data-worker-modal-close tabindex="-1"></div>
+    <div class="admin-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="worker-modal-title">
+      <div class="admin-modal-head">
+        <h2 id="worker-modal-title" data-worker-modal-title>Hodim qo‘shish</h2>
+        <button class="admin-modal-x" type="button" data-worker-modal-close aria-label="Yopish">×</button>
+      </div>
+      <form class="stack-form" data-worker-form>
+        <input type="hidden" name="id" />
+        <label>
+          Ism
+          <input type="text" name="name" required />
+        </label>
+        <label>
+          Lavozim
+          <input type="text" name="lavozim" required />
+        </label>
+        <label>
+          Telegram chat_id (ixtiyoriy)
+          <input type="text" name="telegram" placeholder="123456789" />
+        </label>
+        <label>
+          Login (ixtiyoriy)
+          <input type="text" name="login" autocomplete="off" placeholder="masalan: maftuna" pattern="[A-Za-z0-9._\-]{2,40}" title="Bitta so‘z: harf, raqam, . _ - (bo‘sh joy yo‘q)" maxlength="40" />
+        </label>
+        <label>
+          Parol (ixtiyoriy)
+          <input type="password" name="password" autocomplete="new-password" minlength="8" />
+        </label>
+        <p class="muted-note">Login — <strong>bitta so‘z</strong> (bo‘sh joy yo‘q), masalan <code>maftuna</code>. Bo‘sh qoldirsangiz, umumiy <code>ishchi</code> loginidan kirib ismini tanlaydi. @username yetarli emas — chat_id ni pastdan nusxalang.</p>
+        <div class="admin-modal-actions">
+          <button class="btn btn-ghost" type="button" data-worker-modal-close>Bekor</button>
+          <button class="btn btn-primary" type="submit">Saqlash</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <footer class="site-footer">
     <div class="container footer-inner">
@@ -323,8 +507,8 @@
     </div>
   </footer>
 
-  <script src="i18n.js?v=20260920"></script>
-  <script src="site.js?v=20260920"></script>
-  <script src="admin.js?v=20260920c"></script>
+  <script src="i18n.js?v=20260924"></script>
+  <script src="site.js?v=20260924"></script>
+  <script src="admin.js?v=20260925m"></script>
 </body>
 </html>

@@ -188,28 +188,234 @@
     }
   }
 
+  function anyAdminModalOpen() {
+    return Boolean(
+      document.querySelector(
+        "[data-worker-modal]:not([hidden]), [data-tg-settings-modal]:not([hidden]), [data-gallery-modal]:not([hidden]), [data-hero-modal]:not([hidden]), [data-password-modal]:not([hidden])"
+      )
+    );
+  }
+
+  function openTgSettingsModal() {
+    const modal = document.querySelector("[data-tg-settings-modal]");
+    if (!modal) return;
+    modal.hidden = false;
+    document.body.classList.add("admin-modal-open");
+    renderTokenStatus();
+    const tokenInput = document.querySelector('[data-token-form] input[name="token"]');
+    if (tokenInput) setTimeout(() => tokenInput.focus(), 30);
+  }
+
+  function closeTgSettingsModal() {
+    const modal = document.querySelector("[data-tg-settings-modal]");
+    if (!modal) return;
+    modal.hidden = true;
+    if (!anyAdminModalOpen()) {
+      document.body.classList.remove("admin-modal-open");
+    }
+  }
+
+  function openWorkerModal(mode) {
+    const modal = document.querySelector("[data-worker-modal]");
+    const titleEl = document.querySelector("[data-worker-modal-title]");
+    if (!modal) return;
+    if (titleEl) titleEl.textContent = mode === "edit" ? "Hodimni tahrirlash" : "Hodim qo‘shish";
+    modal.hidden = false;
+    document.body.classList.add("admin-modal-open");
+    const nameInput = workerForm && workerForm.querySelector('input[name="name"]');
+    if (nameInput) {
+      setTimeout(() => nameInput.focus(), 30);
+    }
+  }
+
+  function closeWorkerModal() {
+    const modal = document.querySelector("[data-worker-modal]");
+    if (!modal) return;
+    modal.hidden = true;
+    if (!anyAdminModalOpen()) {
+      document.body.classList.remove("admin-modal-open");
+    }
+    if (workerForm) {
+      workerForm.reset();
+      const idInput = workerForm.querySelector('input[name="id"]');
+      if (idInput) idInput.value = "";
+    }
+  }
+
+  function openGalleryModal() {
+    const modal = document.querySelector("[data-gallery-modal]");
+    if (!modal) return;
+    modal.hidden = false;
+    document.body.classList.add("admin-modal-open");
+    syncGalleryKind();
+    const titleInput = document.querySelector('[data-gallery-form] input[name="title"]');
+    if (titleInput) setTimeout(() => titleInput.focus(), 30);
+  }
+
+  function closeGalleryModal() {
+    const modal = document.querySelector("[data-gallery-modal]");
+    if (!modal) return;
+    modal.hidden = true;
+    if (!anyAdminModalOpen()) {
+      document.body.classList.remove("admin-modal-open");
+    }
+    const form = document.querySelector("[data-gallery-form]");
+    const statusEl = document.querySelector("[data-gallery-status]");
+    if (form) form.reset();
+    if (statusEl) statusEl.textContent = "";
+    syncGalleryKind();
+  }
+
+  function openHeroModal() {
+    const modal = document.querySelector("[data-hero-modal]");
+    if (!modal) return;
+    modal.hidden = false;
+    document.body.classList.add("admin-modal-open");
+    const statusEl = document.querySelector("[data-hero-modal-status]");
+    if (statusEl) statusEl.textContent = "";
+    const fileInput = document.querySelector('[data-hero-form] input[name="image"]');
+    if (fileInput) setTimeout(() => fileInput.focus(), 30);
+  }
+
+  function closeHeroModal() {
+    const modal = document.querySelector("[data-hero-modal]");
+    if (!modal) return;
+    modal.hidden = true;
+    if (!anyAdminModalOpen()) {
+      document.body.classList.remove("admin-modal-open");
+    }
+    const form = document.querySelector("[data-hero-form]");
+    const statusEl = document.querySelector("[data-hero-modal-status]");
+    if (form) form.reset();
+    if (statusEl) statusEl.textContent = "";
+  }
+
+  function openPasswordModal() {
+    const modal = document.querySelector("[data-password-modal]");
+    if (!modal) return;
+    modal.hidden = false;
+    document.body.classList.add("admin-modal-open");
+    const statusEl = document.querySelector("[data-password-modal-status]");
+    if (statusEl) statusEl.textContent = "";
+    const current = document.querySelector('[data-password-form] input[name="currentPassword"]');
+    if (current) setTimeout(() => current.focus(), 30);
+  }
+
+  function closePasswordModal() {
+    const modal = document.querySelector("[data-password-modal]");
+    if (!modal) return;
+    modal.hidden = true;
+    if (!anyAdminModalOpen()) {
+      document.body.classList.remove("admin-modal-open");
+    }
+    const form = document.querySelector("[data-password-form]");
+    const statusEl = document.querySelector("[data-password-modal-status]");
+    if (form) form.reset();
+    if (statusEl) statusEl.textContent = "";
+  }
+
+  function formatGalleryDate(value) {
+    const s = String(value || "").trim();
+    if (!s) return "—";
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return s.slice(0, 16);
+    return d.toLocaleDateString("uz-UZ", { year: "numeric", month: "2-digit", day: "2-digit" });
+  }
+
+  function galleryThumbSrc(item) {
+    const raw = item.poster || (item.type === "photo" ? item.src : "") || "";
+    if (!raw) return "";
+    if (/^https?:\/\//i.test(raw) || raw.startsWith("data:")) return raw;
+    return mediaUrl(raw);
+  }
+
   function renderWorkers() {
     const listEl = document.querySelector("[data-worker-list]");
+    const toolsEl = document.querySelector("[data-worker-tools]");
+    const countEl = document.querySelector("[data-worker-count]");
     if (!listEl) return;
     const workers = asList(state.workers);
+    if (toolsEl) toolsEl.hidden = !workers.length;
+
     if (!workers.length) {
-      listEl.innerHTML = "<li class=\"muted-note\">Ishchilar yo‘q. Telegram chat_id ni pastdagi ro‘yxatdan nusxalang.</li>";
+      listEl.innerHTML =
+        "<p class=\"muted-note\">Hali hodim yo‘q. «Hodim qo‘shish» tugmasini bosing. Telegram chat_id ni bot bo‘limidan nusxalashingiz mumkin.</p>";
+      if (countEl) countEl.textContent = "";
       return;
     }
-    listEl.innerHTML = workers
-      .map(
-        (w, idx) => `
-      <li>
-        <strong>${escapeHtml(w.name)}</strong> — ${escapeHtml(w.lavozim)}<br />
-        Telegram chat_id: ${w.telegram ? `<code>${escapeHtml(String(w.telegram))}</code>` : "<span class=\"muted-note\">yo‘q — pastdan nusxalang</span>"}<br />
-        Login: ${w.login ? `<code>${escapeHtml(w.login)}</code>` : "umumiy (<code>ishchi</code>)"}
-        <div class="item-actions">
-          <button type="button" data-edit-worker="${idx}">Tahrirlash</button>
-          <button type="button" data-remove-worker="${idx}">O‘chirish</button>
-        </div>
-      </li>`
-      )
-      .join("");
+
+    const field = document.querySelector("[data-worker-search-field]")?.value || "name";
+    const q = String(document.querySelector("[data-worker-search]")?.value || "")
+      .trim()
+      .toLowerCase();
+    const filtered = workers
+      .map((w, idx) => ({ w, idx }))
+      .filter(({ w }) => {
+        if (!q) return true;
+        const hay =
+          field === "lavozim"
+            ? w.lavozim
+            : field === "telegram"
+              ? w.telegram
+              : field === "login"
+                ? w.login
+                : w.name;
+        return String(hay || "")
+          .toLowerCase()
+          .includes(q);
+      });
+
+    if (countEl) {
+      countEl.textContent = q
+        ? `${filtered.length} / ${workers.length} ta`
+        : `Jami: ${workers.length} ta`;
+    }
+
+    if (!filtered.length) {
+      listEl.innerHTML = "<p class=\"muted-note\">Qidiruv bo‘yicha hodim topilmadi.</p>";
+      return;
+    }
+
+    listEl.innerHTML = `<table class="admin-data-table">
+      <thead>
+        <tr>
+          <th scope="col">№</th>
+          <th scope="col">Ism</th>
+          <th scope="col">Lavozim</th>
+          <th scope="col">Telegram chat_id</th>
+          <th scope="col">Login</th>
+          <th scope="col">Boshqaruv</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filtered
+          .map(
+            ({ w, idx }, row) => `
+        <tr>
+          <td class="col-num">${row + 1}</td>
+          <td class="col-name">${escapeHtml(w.name || "—")}</td>
+          <td class="col-role">${escapeHtml(w.lavozim || "—")}</td>
+          <td class="col-mono">${
+            w.telegram
+              ? `<code>${escapeHtml(String(w.telegram))}</code>`
+              : `<span class="muted-note">yo‘q</span>`
+          }</td>
+          <td class="col-mono">${
+            w.login
+              ? `<code>${escapeHtml(w.login)}</code>`
+              : `<span class="muted-note">ishchi</span>`
+          }</td>
+          <td class="col-actions">
+            <span class="col-actions-inner">
+              <button type="button" class="btn-table btn-table-edit" data-edit-worker="${idx}">Tahrirlash</button>
+              <button type="button" class="btn-table btn-table-del" data-remove-worker="${idx}">O‘chirish</button>
+            </span>
+          </td>
+        </tr>`
+          )
+          .join("")}
+      </tbody>
+    </table>`;
 
     listEl.querySelectorAll("[data-edit-worker]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -221,14 +427,23 @@
         if (workerForm.name) workerForm.name.value = w.name || "";
         if (workerForm.lavozim) workerForm.lavozim.value = w.lavozim || "";
         if (workerForm.telegram) workerForm.telegram.value = w.telegram || "";
-        if (workerForm.login) workerForm.login.value = w.login || "";
-        workerForm.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        if (workerForm.login) {
+          workerForm.login.value = String(w.login || "")
+            .trim()
+            .toLowerCase()
+            .split(/\s+/)[0] || "";
+        }
+        if (workerForm.password) workerForm.password.value = "";
+        openWorkerModal("edit");
       });
     });
 
     listEl.querySelectorAll("[data-remove-worker]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const i = Number(btn.getAttribute("data-remove-worker"));
+        const w = asList(state.workers)[i];
+        const label = w?.name || "hodim";
+        if (!confirm(`“${label}” ni o‘chirasizmi?`)) return;
         const next = asList(state.workers).filter((_, idx) => idx !== i);
         try {
           const saved = await api("/api/workers", {
@@ -331,102 +546,190 @@
     }
   }
 
+  function chatRoleLabel(c) {
+    if (c.panelRole === "admin") return "Admin";
+    if (c.panelRole === "director") return "Direktor";
+    if (c.canAnnounce) return "E’lon";
+    return "—";
+  }
+
   function renderChats() {
     const listEl = document.querySelector("[data-chat-list]");
+    const toolsEl = document.querySelector("[data-chat-tools]");
+    const countEl = document.querySelector("[data-chat-count]");
     if (!listEl) return;
     const chats = asList(state.chats);
+    if (toolsEl) toolsEl.hidden = !chats.length;
+
     if (!chats.length) {
       listEl.innerHTML =
-        "<li class=\"muted-note\">Hali hech kim botga yozmagan. Ishchi botni ochib /start bosing, keyin shu tugmani qayta bosing.</li>";
+        "<p class=\"muted-note\">Hali hech kim botga yozmagan. Ishchi botni ochib /start bosing, keyin «Chatlarni yangilash» ni bosing.</p>";
+      if (countEl) countEl.textContent = "";
       return;
     }
-    listEl.innerHTML = chats
-      .map((c) => {
-        const user = c.username ? `@${c.username}` : "";
-        const id = String(c.id || c.chat_id || "");
-        const can = Boolean(c.canAnnounce);
-        return `<li>
-          <strong>${escapeHtml(c.name || "Foydalanuvchi")}</strong> ${escapeHtml(user)}
-          ${can ? '<span class="muted-note"> · e’lon yubora oladi</span>' : ""}<br />
-          chat_id: <code>${escapeHtml(id)}</code>
-          <div class="item-actions">
-            <button type="button" data-copy-chat="${escapeHtml(id)}">Nusxa</button>
-            <button type="button" data-test-chat="${escapeHtml(id)}">Test yuborish</button>
-            <button type="button" data-announce-chat="${escapeHtml(id)}" data-announce-on="${can ? "1" : "0"}">${
-              can ? "E’lonni o‘chirish" : "E’lon yubora oladi"
-            }</button>
-            <button type="button" data-remove-chat="${escapeHtml(id)}">O‘chirish</button>
-          </div>
-        </li>`;
-      })
-      .join("");
 
-    listEl.querySelectorAll("[data-copy-chat]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const id = btn.getAttribute("data-copy-chat");
-        const input = document.querySelector('[data-worker-form] input[name="telegram"]');
-        if (input) input.value = id;
-        try {
-          await navigator.clipboard.writeText(id);
-        } catch {
-          /* ignore */
-        }
-      });
+    const field = document.querySelector("[data-chat-search-field]")?.value || "name";
+    const q = String(document.querySelector("[data-chat-search]")?.value || "")
+      .trim()
+      .toLowerCase();
+    const filtered = chats.filter((c) => {
+      if (!q) return true;
+      const id = String(c.id || c.chat_id || "");
+      const hay =
+        field === "username"
+          ? c.username
+          : field === "id"
+            ? id
+            : field === "role"
+              ? chatRoleLabel(c)
+              : c.name;
+      return String(hay || "")
+        .toLowerCase()
+        .includes(q);
     });
 
-    listEl.querySelectorAll("[data-test-chat]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const statusEl = document.querySelector("[data-token-status]");
-        try {
-          await api("/api/telegram/test", {
-            method: "POST",
-            body: JSON.stringify({ chat_id: btn.getAttribute("data-test-chat") }),
-          });
-          if (statusEl) statusEl.textContent = "Test xabar yuborildi. Telegramni tekshiring.";
-        } catch (err) {
-          if (statusEl) statusEl.textContent = err.message;
-        }
-      });
-    });
+    if (countEl) {
+      countEl.textContent = q ? `${filtered.length} / ${chats.length} ta` : `Jami: ${chats.length} ta`;
+    }
 
-    listEl.querySelectorAll("[data-announce-chat]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const id = btn.getAttribute("data-announce-chat");
-        const enabled = btn.getAttribute("data-announce-on") !== "1";
+    if (!filtered.length) {
+      listEl.innerHTML = "<p class=\"muted-note\">Qidiruv bo‘yicha chat topilmadi.</p>";
+      return;
+    }
+
+    listEl.innerHTML = `<table class="admin-data-table">
+      <thead>
+        <tr>
+          <th scope="col">№</th>
+          <th scope="col">Ism</th>
+          <th scope="col">Username</th>
+          <th scope="col">chat_id</th>
+          <th scope="col">Rol</th>
+          <th scope="col">Boshqaruv</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filtered
+          .map((c, row) => {
+            const id = String(c.id || c.chat_id || "");
+            const rawName = String(c.name || "").trim();
+            const displayName =
+              !rawName || rawName === "." || rawName === "..." || rawName === "…"
+                ? c.username
+                  ? `@${c.username}`
+                  : id || "Foydalanuvchi"
+                : rawName;
+            const user = c.username ? `@${c.username}` : "—";
+            const role = c.panelRole === "admin" || c.panelRole === "director" ? c.panelRole : "";
+            return `<tr>
+          <td class="col-num">${row + 1}</td>
+          <td class="col-name">${escapeHtml(displayName)}</td>
+          <td class="col-mono">${escapeHtml(user)}</td>
+          <td class="col-mono"><code>${escapeHtml(id)}</code></td>
+          <td>${escapeHtml(chatRoleLabel(c))}</td>
+          <td class="col-actions">
+            <select class="admin-row-action" data-chat-action data-chat-id="${escapeHtml(id)}" data-chat-role="${escapeHtml(role)}" data-chat-announce="${c.canAnnounce ? "1" : "0"}" aria-label="Amallar">
+              <option value="">Amallar…</option>
+              <option value="copy">Nusxa</option>
+              <option value="test">Test yuborish</option>
+              <option value="admin"${role === "admin" ? " disabled" : ""}>Admin qilish</option>
+              <option value="director"${role === "director" ? " disabled" : ""}>Direktor qilish</option>
+              ${
+                role || c.canAnnounce
+                  ? `<option value="clear">Ruxsatni olish</option>`
+                  : ""
+              }
+              <option value="delete">O‘chirish</option>
+            </select>
+          </td>
+        </tr>`;
+          })
+          .join("")}
+      </tbody>
+    </table>`;
+
+    listEl.querySelectorAll("[data-chat-action]").forEach((sel) => {
+      sel.addEventListener("change", async () => {
+        const action = sel.value;
+        const id = sel.getAttribute("data-chat-id");
+        sel.value = "";
+        if (!action || !id) return;
         const statusEl = document.querySelector("[data-token-status]");
-        try {
-          const data = await api("/api/telegram/chats/announce", {
-            method: "POST",
-            body: JSON.stringify({ chat_id: id, enabled }),
-          });
-          state.chats = asList(data.chats);
-          renderChats();
-          if (statusEl) {
-            statusEl.textContent = enabled
-              ? "Shu chat botga yozsa, e’lon hammaga ketadi."
-              : "Bu chat endi e’lon yubora olmaydi.";
+
+        if (action === "copy") {
+          const input = document.querySelector('[data-worker-form] input[name="telegram"]');
+          if (input) input.value = id;
+          try {
+            await navigator.clipboard.writeText(id);
+          } catch {
+            /* ignore */
           }
-        } catch (err) {
-          if (statusEl) statusEl.textContent = err.message;
+          openWorkerModal("add");
+          if (input) input.focus();
+          return;
         }
-      });
-    });
 
-    listEl.querySelectorAll("[data-remove-chat]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const id = btn.getAttribute("data-remove-chat");
-        if (!id || !confirm("Bu chat_id ni ro‘yxatdan o‘chirasizmi?")) return;
-        const statusEl = document.querySelector("[data-token-status]");
-        try {
-          const data = await api("/api/telegram/chats/delete", {
-            method: "POST",
-            body: JSON.stringify({ chat_id: id }),
-          });
-          state.chats = asList(data.chats);
-          renderChats();
-          if (statusEl) statusEl.textContent = "Chat_id o‘chirildi.";
-        } catch (err) {
-          if (statusEl) statusEl.textContent = err.message;
+        if (action === "test") {
+          try {
+            await api("/api/telegram/test", {
+              method: "POST",
+              body: JSON.stringify({ chat_id: id }),
+            });
+            if (statusEl) statusEl.textContent = "Test xabar yuborildi. Telegramni tekshiring.";
+          } catch (err) {
+            if (statusEl) statusEl.textContent = err.message;
+          }
+          return;
+        }
+
+        if (action === "admin" || action === "director") {
+          try {
+            const data = await api("/api/telegram/chats/panel", {
+              method: "POST",
+              body: JSON.stringify({ chat_id: id, role: action }),
+            });
+            state.chats = asList(data.chats);
+            renderChats();
+            if (statusEl) {
+              statusEl.textContent =
+                action === "admin"
+                  ? "Shu chat Admin: e’lon yuboradi va botda «Boshqaruv paneli» ochiladi."
+                  : "Shu chat Direktor: e’lon yuboradi va botda «Boshqaruv paneli» ochiladi.";
+            }
+          } catch (err) {
+            if (statusEl) statusEl.textContent = err.message;
+          }
+          return;
+        }
+
+        if (action === "clear") {
+          try {
+            const data = await api("/api/telegram/chats/panel", {
+              method: "POST",
+              body: JSON.stringify({ chat_id: id, role: "" }),
+            });
+            state.chats = asList(data.chats);
+            renderChats();
+            if (statusEl) statusEl.textContent = "E’lon va panel ruxsati olib tashlandi.";
+          } catch (err) {
+            if (statusEl) statusEl.textContent = err.message;
+          }
+          return;
+        }
+
+        if (action === "delete") {
+          if (!confirm("Bu chat_id ni ro‘yxatdan o‘chirasizmi?")) return;
+          try {
+            const data = await api("/api/telegram/chats/delete", {
+              method: "POST",
+              body: JSON.stringify({ chat_id: id }),
+            });
+            state.chats = asList(data.chats);
+            renderChats();
+            if (statusEl) statusEl.textContent = "Chat_id o‘chirildi.";
+          } catch (err) {
+            if (statusEl) statusEl.textContent = err.message;
+          }
         }
       });
     });
@@ -440,48 +743,140 @@
 
   function renderMedia() {
     const heroPrev = document.querySelector("[data-preview-hero]");
+    const heroPath = document.querySelector("[data-hero-path]");
     if (heroPrev && state.media && state.media.hero) {
       heroPrev.src = mediaUrl(state.media.hero);
+    }
+    if (heroPath && state.media && state.media.hero) {
+      heroPath.textContent = state.media.hero;
     }
   }
 
   function renderGallery() {
     const listEl = document.querySelector("[data-gallery-list]");
+    const toolsEl = document.querySelector("[data-gallery-tools]");
+    const countEl = document.querySelector("[data-gallery-count]");
     if (!listEl) return;
     const items = state.gallery || [];
+    if (toolsEl) toolsEl.hidden = !items.length;
+    if (countEl) countEl.textContent = items.length ? `${items.length} ta material` : "";
+
     if (!items.length) {
-      listEl.innerHTML = "<li class=\"muted-note\">Hali material yo‘q. Rasm, video yoki YouTube qo‘shing.</li>";
+      listEl.innerHTML =
+        "<p class=\"muted-note\">Hali material yo‘q. «Galereya qo‘shish» tugmasini bosing.</p>";
       return;
     }
-    const labels = { photo: "Rasm", video: "Video", youtube: "YouTube" };
-    listEl.innerHTML = items
-      .map(
-        (item) => `
-      <li>
-        <strong>${escapeHtml(item.title)}</strong> — ${escapeHtml(labels[item.type] || item.type)}
-        ${item.caption ? `<div>${escapeHtml(item.caption)}</div>` : ""}
-        <small class="muted-note">${escapeHtml(item.createdAt || "")}</small>
-        <div class="item-actions">
-          <button type="button" data-remove-gallery="${escapeHtml(item.id)}">O‘chirish</button>
-        </div>
-      </li>`
-      )
-      .join("");
 
-    listEl.querySelectorAll("[data-remove-gallery]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
+    const labels = { photo: "Rasm", video: "Video", youtube: "YouTube" };
+    listEl.innerHTML = `<table class="admin-data-table admin-gallery-table">
+      <thead>
+        <tr>
+          <th scope="col">№</th>
+          <th scope="col">Ko‘rinish</th>
+          <th scope="col">Sarlavha</th>
+          <th scope="col">Turi</th>
+          <th scope="col">Izoh</th>
+          <th scope="col">Sana</th>
+          <th scope="col">Boshqaruv</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${items
+          .map((item, row) => {
+            const canPoster = item.type === "video" || item.type === "youtube";
+            const thumb = galleryThumbSrc(item);
+            const thumbHtml = thumb
+              ? `<img class="gallery-table-thumb" src="${escapeHtml(thumb)}" alt="" />`
+              : `<span class="gallery-table-thumb gallery-table-thumb-empty" aria-hidden="true"></span>`;
+            const caption = String(item.caption || "").trim();
+            return `<tr>
+          <td class="col-num">${row + 1}</td>
+          <td class="col-thumb">${thumbHtml}</td>
+          <td class="col-name">${escapeHtml(item.title || "—")}</td>
+          <td>${escapeHtml(labels[item.type] || item.type || "—")}</td>
+          <td class="col-caption">${caption ? escapeHtml(caption) : "—"}</td>
+          <td class="col-date">${escapeHtml(formatGalleryDate(item.createdAt))}</td>
+          <td class="col-actions">
+            <select class="admin-row-action" data-gallery-action data-gallery-id="${escapeHtml(item.id)}" data-can-poster="${canPoster ? "1" : "0"}" aria-label="Amallar">
+              <option value="">Amallar…</option>
+              ${canPoster ? `<option value="poster">Thumbnail</option>` : ""}
+              <option value="delete">O‘chirish</option>
+            </select>
+          </td>
+        </tr>`;
+          })
+          .join("")}
+      </tbody>
+    </table>
+    <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden data-gallery-poster-pick />`;
+
+    const posterPick = listEl.querySelector("[data-gallery-poster-pick]");
+    listEl.querySelectorAll("[data-gallery-action]").forEach((sel) => {
+      sel.addEventListener("change", async () => {
+        const action = sel.value;
+        const id = sel.getAttribute("data-gallery-id");
+        sel.value = "";
+        if (!action || !id) return;
+        if (action === "delete") {
+          if (!confirm("Bu materialni o‘chirasizmi?")) return;
+          try {
+            const saved = await api("/api/gallery/delete", {
+              method: "POST",
+              body: JSON.stringify({ id }),
+            });
+            state.gallery = saved.gallery || [];
+            renderGallery();
+          } catch (err) {
+            alert(err.message);
+          }
+          return;
+        }
+        if (action === "poster" && posterPick) {
+          posterPick.setAttribute("data-for-id", id);
+          posterPick.click();
+        }
+      });
+    });
+
+    if (posterPick) {
+      posterPick.addEventListener("change", async () => {
+        const id = posterPick.getAttribute("data-for-id");
+        const file = posterPick.files && posterPick.files[0];
+        posterPick.value = "";
+        posterPick.removeAttribute("data-for-id");
+        if (!id || !file) return;
         try {
-          const saved = await api("/api/gallery/delete", {
-            method: "POST",
-            body: JSON.stringify({ id: btn.getAttribute("data-remove-gallery") }),
-          });
-          state.gallery = saved.gallery || [];
+          await uploadGalleryPoster(id, file);
           renderGallery();
         } catch (err) {
           alert(err.message);
         }
       });
+    }
+  }
+
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error("Rasm o‘qilmadi."));
+      reader.readAsDataURL(file);
     });
+  }
+
+  async function uploadGalleryPoster(id, file) {
+    const data = await fileToDataUrl(file);
+    const saved = await api("/api/gallery/poster", {
+      method: "POST",
+      body: JSON.stringify({
+        id,
+        filename: file.name,
+        type: file.type,
+        data,
+      }),
+    });
+    state.gallery = saved.gallery || state.gallery;
+    return saved;
   }
 
   function fillContactForm() {
@@ -898,6 +1293,18 @@
     document.body.classList.remove("admin-nav-open");
   }
 
+  const HOME_NAV_IDS = new Set(["hero", "gallery", "director", "reports", "contact"]);
+
+  function setHomeNavOpen(open) {
+    const group = document.querySelector('[data-admin-nav-group="home"]');
+    if (!group) return;
+    const toggle = group.querySelector("[data-admin-nav-group-toggle]");
+    const sub = group.querySelector("[data-admin-nav-sub]");
+    group.classList.toggle("is-open", open);
+    if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    if (sub) sub.hidden = !open;
+  }
+
   function showSitePane(id) {
     const nav = document.querySelector("[data-admin-nav-list]");
     if (!nav) return;
@@ -905,7 +1312,7 @@
     const panes = document.querySelectorAll("[data-admin-pane]");
     const next = buttons.some((b) => b.getAttribute("data-admin-nav") === id)
       ? id
-      : buttons[0]?.getAttribute("data-admin-nav") || "passwords";
+      : buttons[0]?.getAttribute("data-admin-nav") || "workers";
     buttons.forEach((btn) => {
       btn.classList.toggle("is-active", btn.getAttribute("data-admin-nav") === next);
     });
@@ -913,8 +1320,13 @@
       pane.hidden = pane.getAttribute("data-admin-pane") !== next;
       pane.classList.toggle("is-active", pane.getAttribute("data-admin-pane") === next);
     });
+    const inHome = HOME_NAV_IDS.has(next);
+    setHomeNavOpen(inHome);
+    const homeToggle = nav.querySelector("[data-admin-nav-group-toggle]");
+    if (homeToggle) homeToggle.classList.toggle("is-active", inHome);
     const active = buttons.find((btn) => btn.getAttribute("data-admin-nav") === next);
-    setPaneTitle(active?.textContent.trim() || "");
+    const label = active?.textContent.trim() || "";
+    setPaneTitle(inHome && label ? `Bosh sahifa · ${label}` : label);
     closeAdminNav();
     try {
       localStorage.setItem("ttati_admin_pane", next);
@@ -932,9 +1344,29 @@
       nav.querySelectorAll("[data-admin-nav]").forEach((btn) => {
         btn.addEventListener("click", () => showSitePane(btn.getAttribute("data-admin-nav")));
       });
+      const homeToggle = nav.querySelector("[data-admin-nav-group-toggle]");
+      if (homeToggle) {
+        homeToggle.addEventListener("click", () => {
+          const group = homeToggle.closest("[data-admin-nav-group]");
+          const isOpen = group?.classList.contains("is-open");
+          if (isOpen && HOME_NAV_IDS.has(localStorage.getItem("ttati_admin_pane") || "")) {
+            setHomeNavOpen(false);
+            homeToggle.classList.remove("is-active");
+            return;
+          }
+          let last = "hero";
+          try {
+            const saved = localStorage.getItem("ttati_admin_pane");
+            if (saved && HOME_NAV_IDS.has(saved)) last = saved;
+          } catch {
+            /* ignore */
+          }
+          showSitePane(last);
+        });
+      }
       siteNavBound = true;
     }
-    let start = "appeals";
+    let start = "workers";
     try {
       start = localStorage.getItem("ttati_admin_pane") || start;
     } catch {
@@ -1061,7 +1493,10 @@
     const deleteBtn = document.querySelector("[data-daily-delete]");
     const saveBtn = document.querySelector("[data-daily-save]") || dailyForm.querySelector("button[type='submit']");
     const calLink = document.querySelector("[data-own-calendar]");
-    if (calLink) calLink.href = "kunlik.html";
+    if (calLink) {
+      const wid = String(session.workerId || "").trim();
+      calLink.href = wid ? `kunlik.html?id=${encodeURIComponent(wid)}` : "kunlik.html";
+    }
     const area = dailyForm.querySelector("textarea");
     const now = new Date();
     if (area) {
@@ -1144,6 +1579,8 @@
     loginPanel.hidden = true;
     appPanel.hidden = false;
     if (roleEl) roleEl.textContent = session.label || session.role;
+    const sessionBox = document.querySelector("[data-admin-session]");
+    if (sessionBox) sessionBox.hidden = false;
 
     document.body.classList.toggle("is-site-admin", isAdmin);
     document.body.classList.toggle("is-director-admin", isDirector);
@@ -1172,6 +1609,8 @@
     document.body.classList.remove("is-director-admin", "is-worker-admin", "is-site-admin");
     loginPanel.hidden = false;
     appPanel.hidden = true;
+    const sessionBox = document.querySelector("[data-admin-session]");
+    if (sessionBox) sessionBox.hidden = true;
   }
 
   async function enterSession(session) {
@@ -1253,16 +1692,117 @@
   }
 
   const workerForm = document.querySelector("[data-worker-form]");
+  const workerOpenBtn = document.querySelector("[data-worker-open]");
+  const workerSearch = document.querySelector("[data-worker-search]");
+  const workerSearchField = document.querySelector("[data-worker-search-field]");
+  const workerSearchClear = document.querySelector("[data-worker-search-clear]");
+  if (workerSearch) {
+    workerSearch.addEventListener("input", () => renderWorkers());
+  }
+  if (workerSearchField) {
+    workerSearchField.addEventListener("change", () => renderWorkers());
+  }
+  if (workerSearchClear) {
+    workerSearchClear.addEventListener("click", () => {
+      if (workerSearch) workerSearch.value = "";
+      if (workerSearchField) workerSearchField.value = "name";
+      renderWorkers();
+    });
+  }
+  if (workerOpenBtn) {
+    workerOpenBtn.addEventListener("click", () => {
+      if (workerForm) {
+        workerForm.reset();
+        const idInput = workerForm.querySelector('input[name="id"]');
+        if (idInput) idInput.value = "";
+      }
+      openWorkerModal("add");
+    });
+  }
+  document.querySelectorAll("[data-worker-modal-close]").forEach((el) => {
+    el.addEventListener("click", () => closeWorkerModal());
+  });
+  const tgSettingsOpen = document.querySelector("[data-tg-settings-open]");
+  if (tgSettingsOpen) {
+    tgSettingsOpen.addEventListener("click", () => openTgSettingsModal());
+  }
+  document.querySelectorAll("[data-tg-settings-close]").forEach((el) => {
+    el.addEventListener("click", () => closeTgSettingsModal());
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    const passwordModal = document.querySelector("[data-password-modal]");
+    if (passwordModal && !passwordModal.hidden) {
+      closePasswordModal();
+      return;
+    }
+    const heroModal = document.querySelector("[data-hero-modal]");
+    if (heroModal && !heroModal.hidden) {
+      closeHeroModal();
+      return;
+    }
+    const galleryModal = document.querySelector("[data-gallery-modal]");
+    if (galleryModal && !galleryModal.hidden) {
+      closeGalleryModal();
+      return;
+    }
+    const tgModal = document.querySelector("[data-tg-settings-modal]");
+    if (tgModal && !tgModal.hidden) {
+      closeTgSettingsModal();
+      return;
+    }
+    const modal = document.querySelector("[data-worker-modal]");
+    if (modal && !modal.hidden) closeWorkerModal();
+  });
+  const passwordOpenBtn = document.querySelector("[data-password-open]");
+  if (passwordOpenBtn) {
+    passwordOpenBtn.addEventListener("click", () => openPasswordModal());
+  }
+  document.querySelectorAll("[data-password-modal-close]").forEach((el) => {
+    el.addEventListener("click", () => closePasswordModal());
+  });
+  const heroOpenBtn = document.querySelector("[data-hero-open]");
+  if (heroOpenBtn) {
+    heroOpenBtn.addEventListener("click", () => openHeroModal());
+  }
+  document.querySelectorAll("[data-hero-modal-close]").forEach((el) => {
+    el.addEventListener("click", () => closeHeroModal());
+  });
+  const galleryOpenBtn = document.querySelector("[data-gallery-open]");
+  if (galleryOpenBtn) {
+    galleryOpenBtn.addEventListener("click", () => openGalleryModal());
+  }
+  document.querySelectorAll("[data-gallery-modal-close]").forEach((el) => {
+    el.addEventListener("click", () => closeGalleryModal());
+  });
   if (workerForm) {
+    const workerLoginInput = workerForm.querySelector('input[name="login"]');
+    if (workerLoginInput) {
+      workerLoginInput.addEventListener("input", () => {
+        const cleaned = String(workerLoginInput.value || "")
+          .replace(/\s+/g, "")
+          .toLowerCase();
+        if (workerLoginInput.value !== cleaned) workerLoginInput.value = cleaned;
+      });
+    }
     workerForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const fd = new FormData(workerForm);
+      const rawLogin = String(fd.get("login") || "").trim().toLowerCase();
+      if (rawLogin && /\s/.test(rawLogin)) {
+        alert("Login bitta so‘z bo‘lishi kerak — bo‘sh joy qo‘yilmaydi.");
+        return;
+      }
+      if (rawLogin && !/^[a-z0-9._-]{2,40}$/.test(rawLogin)) {
+        alert("Login: 2–40 belgi, faqat harf, raqam, nuqta, _ yoki -.");
+        return;
+      }
       const worker = {
         id: String(fd.get("id") || "").trim(),
         name: String(fd.get("name") || "").trim(),
         lavozim: String(fd.get("lavozim") || "").trim(),
         telegram: String(fd.get("telegram") || "").trim(),
-        login: String(fd.get("login") || "").trim().toLowerCase(),
+        login: rawLogin,
         password: String(fd.get("password") || "").trim(),
       };
       if (!worker.name || !worker.lavozim) return;
@@ -1288,9 +1828,7 @@
         state.workers = asList(saved.workers).length ? asList(saved.workers) : list;
         renderWorkers();
         renderAnnounceTargets();
-        workerForm.reset();
-        const idInput = workerForm.querySelector('input[name="id"]');
-        if (idInput) idInput.value = "";
+        closeWorkerModal();
       } catch (err) {
         alert(err.message);
       }
@@ -1333,6 +1871,18 @@
   }
 
   const chatsBtn = document.querySelector("[data-refresh-chats]");
+  const chatSearch = document.querySelector("[data-chat-search]");
+  const chatSearchField = document.querySelector("[data-chat-search-field]");
+  const chatSearchClear = document.querySelector("[data-chat-search-clear]");
+  if (chatSearch) chatSearch.addEventListener("input", () => renderChats());
+  if (chatSearchField) chatSearchField.addEventListener("change", () => renderChats());
+  if (chatSearchClear) {
+    chatSearchClear.addEventListener("click", () => {
+      if (chatSearch) chatSearch.value = "";
+      if (chatSearchField) chatSearchField.value = "name";
+      renderChats();
+    });
+  }
   if (chatsBtn) {
     chatsBtn.addEventListener("click", async () => {
       const statusEl = document.querySelector("[data-token-status]");
@@ -1468,10 +2018,15 @@
     heroForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const file = heroForm.querySelector('input[type="file"]')?.files?.[0];
-      const statusEl = document.querySelector("[data-hero-status]");
+      const statusEl =
+        document.querySelector("[data-hero-modal-status]") ||
+        document.querySelector("[data-hero-status]");
       try {
         await uploadSlot("hero", file, statusEl);
         heroForm.reset();
+        const paneStatus = document.querySelector("[data-hero-status]");
+        if (paneStatus) paneStatus.textContent = "Rasm saqlandi. Bosh sahifada ko‘rinadi.";
+        closeHeroModal();
       } catch (err) {
         if (statusEl) statusEl.textContent = err.message;
       }
@@ -1481,13 +2036,16 @@
   const galleryKind = document.querySelector("[data-gallery-kind]");
   const galleryFileWrap = document.querySelector("[data-gallery-file-wrap]");
   const galleryUrlWrap = document.querySelector("[data-gallery-url-wrap]");
+  const galleryPosterWrap = document.querySelector("[data-gallery-poster-wrap]");
   const galleryFileInput = document.querySelector('[data-gallery-form] input[name="file"]');
 
   function syncGalleryKind() {
     const kind = galleryKind ? galleryKind.value : "photo";
     const isYt = kind === "youtube";
+    const wantsPoster = kind === "video" || kind === "youtube";
     if (galleryFileWrap) galleryFileWrap.hidden = isYt;
     if (galleryUrlWrap) galleryUrlWrap.hidden = !isYt;
+    if (galleryPosterWrap) galleryPosterWrap.hidden = !wantsPoster;
     if (galleryFileInput) {
       galleryFileInput.required = !isYt;
       galleryFileInput.accept =
@@ -1511,6 +2069,7 @@
       const caption = String(fd.get("caption") || "").trim();
       const kind = String(fd.get("kind") || "photo");
       const statusEl = document.querySelector("[data-gallery-status]");
+      const posterFile = galleryForm.querySelector('input[name="poster"]')?.files?.[0];
       if (!title) return;
       try {
         if (statusEl) statusEl.textContent = "Saqlanmoqda...";
@@ -1548,11 +2107,16 @@
             throw new Error(saved.error || `Server xatosi (${res.status})`);
           }
         }
+        if (posterFile && saved?.item?.id && (kind === "video" || kind === "youtube")) {
+          if (statusEl) statusEl.textContent = "Thumbnail saqlanmoqda...";
+          saved = await uploadGalleryPoster(saved.item.id, posterFile);
+        }
         state.gallery = saved.gallery || state.gallery;
         renderGallery();
         galleryForm.reset();
         syncGalleryKind();
         if (statusEl) statusEl.textContent = "Galereyaga qo‘shildi.";
+        closeGalleryModal();
       } catch (err) {
         if (statusEl) statusEl.textContent = err.message;
       }
@@ -1811,7 +2375,10 @@
     passwordForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const fd = new FormData(passwordForm);
-      const statusEl = document.querySelector("[data-password-status]");
+      const statusEl =
+        document.querySelector("[data-password-modal-status]") ||
+        document.querySelector("[data-password-status]");
+      const paneStatus = document.querySelector("[data-password-status]");
       const currentPassword = String(fd.get("currentPassword") || "");
       const adminPassword = String(fd.get("adminPassword") || "").trim();
       const adminPassword2 = String(fd.get("adminPassword2") || "").trim();
@@ -1846,10 +2413,9 @@
           body: JSON.stringify(payload),
         });
         passwordForm.reset();
-        if (statusEl) {
-          statusEl.textContent =
-            "Parol yangilandi. O‘zgargan loginlar yangi parol bilan kiradi.";
-        }
+        const okMsg = "Parol yangilandi. O‘zgargan loginlar yangi parol bilan kiradi.";
+        if (paneStatus) paneStatus.textContent = okMsg;
+        closePasswordModal();
       } catch (err) {
         if (statusEl) statusEl.textContent = err.message;
       }

@@ -26,7 +26,7 @@
       "nav.appeal": "Murojaat",
       "nav.back": "Saytga qaytish",
       "nav.login": "Kirish",
-      "hero.h1": "Viloyat tuproq tahlili — laborator aniqlik bilan",
+      "hero.h1": "Viloyat tuproq tahlili\u00A0— laborator aniqlik bilan",
       "hero.lead":
         "Qashqadaryo shahar va tumanlaridan olingan namunalarni agrokimyoviy va mexanik tahlil qilamiz, amaliy tavsiyalar tayyorlaymiz.",
       "hero.contact": "Bog‘lanish",
@@ -61,6 +61,7 @@
       "gallery.error":
         "Galereyani yuklab bo‘lmadi. Saytni OCHISH.bat orqali oching.",
       "gallery.item": "Material",
+      "gallery.play": "Ijro etish",
       "staff.eyebrow": "Rahbariyat",
       "staff.h2": "Direktor",
       "staff.loading": "Yuklanmoqda...",
@@ -178,7 +179,7 @@
       "nav.appeal": "Обращение",
       "nav.back": "На сайт",
       "nav.login": "Вход",
-      "hero.h1": "Анализ почв области — с лабораторной точностью",
+      "hero.h1": "Анализ почв области\u00A0— с лабораторной точностью",
       "hero.lead":
         "Проводим агрохимический и механический анализ проб из городов и районов Кашкадарьи, готовим практические рекомендации.",
       "hero.contact": "Связаться",
@@ -213,6 +214,7 @@
       "gallery.error":
         "Не удалось загрузить галерею. Откройте сайт через OCHISH.bat.",
       "gallery.item": "Материал",
+      "gallery.play": "Смотреть",
       "staff.eyebrow": "Руководство",
       "staff.h2": "Директор",
       "staff.loading": "Загрузка...",
@@ -331,7 +333,7 @@
       "nav.appeal": "Inquiry",
       "nav.back": "Back to site",
       "nav.login": "Sign in",
-      "hero.h1": "Regional soil analysis — with laboratory precision",
+      "hero.h1": "Regional soil analysis\u00A0— with laboratory precision",
       "hero.lead":
         "We run agrochemical and mechanical tests on samples from Kashkadarya cities and districts, and prepare practical recommendations.",
       "hero.contact": "Get in touch",
@@ -366,6 +368,7 @@
       "gallery.error":
         "Could not load the gallery. Open the site with OCHISH.bat.",
       "gallery.item": "Item",
+      "gallery.play": "Play",
       "staff.eyebrow": "Leadership",
       "staff.h2": "Director",
       "staff.loading": "Loading...",
@@ -467,12 +470,32 @@
 
   function getLang() {
     try {
+      const q = new URLSearchParams(location.search).get("lang");
+      if (q && I18N[q]) return q;
+    } catch {
+      /* ignore */
+    }
+    try {
       const saved = localStorage.getItem(KEY);
       if (saved && I18N[saved]) return saved;
     } catch {
       /* ignore */
     }
     return "uz";
+  }
+
+  function syncLangUrl(lang) {
+    try {
+      const url = new URL(location.href);
+      if (lang === "uz") url.searchParams.delete("lang");
+      else url.searchParams.set("lang", lang);
+      const next = `${url.pathname}${url.search}${url.hash}`;
+      if (next !== `${location.pathname}${location.search}${location.hash}`) {
+        history.replaceState(null, "", next);
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
   function setLang(lang) {
@@ -482,6 +505,7 @@
     } catch {
       /* ignore */
     }
+    syncLangUrl(next);
     applyI18n();
   }
 
@@ -555,4 +579,10 @@
 
   renderSwitchers();
   applyI18n();
+  try {
+    const lang = getLang();
+    syncLangUrl(lang);
+  } catch {
+    /* ignore */
+  }
 })();

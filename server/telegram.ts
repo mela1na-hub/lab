@@ -9,6 +9,76 @@ export async function botToken() {
   return enc ? decryptSecret(enc) : "";
 }
 
+/** Telegram API description (inglizcha) → foydalanuvchi uchun o‘zbekcha matn. */
+export function telegramErrorUz(raw: string | undefined | null): string {
+  const src = String(raw || "").trim();
+  if (!src) return "Telegram xatosi.";
+  const s = src.toLowerCase();
+
+  if (s.includes("chat not found") || s.includes("peer_id_invalid")) {
+    return "Chat topilmadi. Chat_id noto‘g‘ri yoki odam botga /start yozmagan.";
+  }
+  if (s.includes("chat_id is empty")) {
+    return "Chat_id bo‘sh. Telegram manzilini to‘ldiring.";
+  }
+  if (s.includes("bot was blocked by the user")) {
+    return "Foydalanuvchi botni bloklagan.";
+  }
+  if (s.includes("user is deactivated")) {
+    return "Foydalanuvchi akkaunti o‘chirilgan.";
+  }
+  if (s.includes("bot can't initiate conversation") || s.includes("can't initiate conversation")) {
+    return "Bot suhbat boshlay olmaydi. Avval odam botga /start yozishi kerak.";
+  }
+  if (s.includes("bot was kicked") || s.includes("bot is not a member")) {
+    return "Bot guruhdan chiqarilgan yoki a’zo emas.";
+  }
+  if (s.includes("have no rights to send") || s.includes("not enough rights")) {
+    return "Botda xabar yuborish huquqi yo‘q.";
+  }
+  if (s.includes("message text is empty")) {
+    return "Xabar matni bo‘sh.";
+  }
+  if (s.includes("message is too long")) {
+    return "Xabar juda uzun. Qisqaroq yozing.";
+  }
+  if (s.includes("can't parse entities") || s.includes("can't find end of the entity")) {
+    return "Xabar formatida xato (HTML/Markdown). Matnni soddalashtiring.";
+  }
+  if (s.includes("too many requests") || s.includes("retry after")) {
+    const m = src.match(/retry after (\d+)/i);
+    return m
+      ? `Juda ko‘p so‘rov. ${m[1]} soniyadan so‘ng qayta urinib ko‘ring.`
+      : "Juda ko‘p so‘rov. Birozdan so‘ng qayta urinib ko‘ring.";
+  }
+  if (s.includes("unauthorized") || s.includes("token is invalid")) {
+    return "Bot tokeni noto‘g‘ri yoki bekor qilingan. Sozlamalarda yangilang.";
+  }
+  if (s.includes("conflict") && s.includes("getupdates")) {
+    return "Bot boshqa joyda ham ishlayapti (getUpdates conflict). Boshqa server/skriptni to‘xtating.";
+  }
+  if (s.includes("group chat was upgraded")) {
+    return "Guruh super-guruhga o‘zgargan. Yangi chat_id kerak.";
+  }
+  if (s.includes("wrong file identifier") || s.includes("failed to get http url content")) {
+    return "Fayl yoki rasm manzili noto‘g‘ri.";
+  }
+  if (s.includes("message to delete not found") || s.includes("message to edit not found")) {
+    return "Xabar topilmadi (o‘chirilgan yoki eskirgan).";
+  }
+  if (s.includes("reply message not found")) {
+    return "Javob beriladigan xabar topilmadi.";
+  }
+  if (s.startsWith("bad request:") || s.startsWith("forbidden:") || s.startsWith("not found:")) {
+    const rest = src.replace(/^(Bad Request|Forbidden|Not Found)\s*:\s*/i, "").trim();
+    return rest ? `Telegram rad etdi: ${rest}` : "Telegram so‘rovni rad etdi.";
+  }
+  if (/^[a-z].*[a-z]$/i.test(src) && /[A-Za-z]{4,}/.test(src) && !/[а-яёўқғҳ]/i.test(src)) {
+    return `Telegram xatosi: ${src}`;
+  }
+  return src;
+}
+
 function telegramHttp(url: URL, body?: unknown, timeoutMs = 25000): Promise<{ status: number; data: any }> {
   const payload = body ? JSON.stringify(body) : undefined;
   return new Promise((resolve, reject) => {
@@ -67,7 +137,7 @@ export async function telegram(
   }
   const { status, data } = await telegramHttp(url, body, timeoutMs);
   if (status >= 400 || data?.ok === false) {
-    throw new Error(data?.description || "Telegram xatosi");
+    throw new Error(telegramErrorUz(data?.description));
   }
   return data as { ok?: boolean; description?: string; result?: any };
 }

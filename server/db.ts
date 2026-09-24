@@ -13,8 +13,8 @@ export function sqlNow(offsetMs = 0) {
   return new Date(Date.now() + offsetMs).toISOString();
 }
 
-function convertSql(sql: string) {
-  return sql
+function convertSql(sql: string, params: unknown[] = []) {
+  let text = sql
     .replace(/\bnow\(\)\s*\+\s*interval\s+'1 hour'/gi, `'${sqlNow(60 * 60 * 1000)}'`)
     .replace(/\bnow\(\)\s*-\s*interval\s+'15 minutes'/gi, `'${sqlNow(-15 * 60 * 1000)}'`)
     .replace(/\bnow\(\)/gi, `'${sqlNow()}'`)
@@ -23,8 +23,20 @@ function convertSql(sql: string) {
     .replace(/::text\[\]/gi, "")
     .replace(/::text/gi, "")
     .replace(/\bTRUE\b/g, "1")
-    .replace(/\bFALSE\b/g, "0")
-    .replace(/\$\d+/g, "?");
+    .replace(/\bFALSE\b/g, "0");
+
+  // Postgres $1/$2 may appear out of order (e.g. SET a=$2 WHERE id=$1).
+  // Rebuild ? placeholders in appearance order and reorder bound values to match.
+  const order: number[] = [];
+  text = text.replace(/\$(\d+)/g, (_m, num: string) => {
+    order.push(Number(num) - 1);
+    return "?";
+  });
+  const bound =
+    order.length === 0
+      ? params.slice()
+      : order.map((idx) => (idx >= 0 && idx < params.length ? params[idx] : null));
+  return { sql: text, params: bound };
 }
 
 function bindValue(value: unknown) {
@@ -55,10 +67,10 @@ export async function query<T extends Record<string, unknown> = Record<string, u
   text: string,
   params: unknown[] = []
 ) {
-  const sql = convertSql(text);
-  const stmt = db.prepare(sql);
-  const bound = params.map(bindValue);
-  if (/^\s*(SELECT|WITH)\b/i.test(sql)) {
+  const converted = convertSql(text, params);
+  const stmt = db.prepare(converted.sql);
+  const bound = converted.params.map(bindValue);
+  if (/^\s*(SELECT|WITH)\b/i.test(converted.sql)) {
     const rows = (stmt.all(...bound) as T[]).map((row) => parseRow(row));
     return { rows, rowCount: rows.length };
   }
@@ -74,6 +86,22 @@ export async function migrate() {
   if (!dailyCols.some((c) => c.name === "video")) {
     db.exec(`ALTER TABLE daily_logs ADD COLUMN video TEXT NOT NULL DEFAULT ''`);
   }
+  const galleryCols = db.prepare(`PRAGMA table_info(gallery_items)`).all() as { name: string }[];
+  if (!galleryCols.some((c) => c.name === "poster")) {
+    db.exec(`ALTER TABLE gallery_items ADD COLUMN poster TEXT NOT NULL DEFAULT ''`);
+  }
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tg_login_tokens (
+      token_hash TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      chat_id TEXT NOT NULL,
+      role TEXT NOT NULL CHECK (role IN ('admin', 'director')),
+      expires_at TEXT NOT NULL,
+      used_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_tg_login_expires ON tg_login_tokens (expires_at);
+  `);
 }
 
 export function closeDb() {

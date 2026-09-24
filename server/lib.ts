@@ -111,14 +111,16 @@ export async function galleryItems() {
     title: string;
     caption: string;
     src: string;
+    poster: string;
     created_at: string;
-  }>(`SELECT id, type, title, caption, src, created_at FROM gallery_items ORDER BY sort_order ASC, created_at DESC`);
+  }>(`SELECT id, type, title, caption, src, COALESCE(poster, '') AS poster, created_at FROM gallery_items ORDER BY sort_order ASC, created_at DESC`);
   return rows.map((it) => ({
     id: it.id,
     type: it.type,
     title: it.title,
     caption: it.caption,
     src: it.src,
+    poster: it.poster || "",
     createdAt: it.created_at,
   }));
 }
@@ -138,16 +140,27 @@ export async function announcementsPublic() {
 export async function chatsPublic() {
   const raw = await setting("announce_chat_ids");
   const allowed = new Set(raw.split(/[\s,]+/).filter(Boolean));
+  let roles: Record<string, string> = {};
+  try {
+    roles = JSON.parse((await setting("panel_chat_roles")) || "{}") as Record<string, string>;
+  } catch {
+    roles = {};
+  }
   const { rows } = await query<{ chat_id: string; name: string; username: string; at: string }>(
     `SELECT chat_id, name, username, at FROM telegram_chats ORDER BY name`
   );
-  return rows.map((c) => ({
-    id: c.chat_id,
-    name: c.name,
-    username: c.username,
-    at: c.at,
-    canAnnounce: allowed.has(c.chat_id),
-  }));
+  return rows.map((c) => {
+    const panelRole =
+      roles[c.chat_id] === "admin" || roles[c.chat_id] === "director" ? roles[c.chat_id] : "";
+    return {
+      id: c.chat_id,
+      name: c.name,
+      username: c.username,
+      at: c.at,
+      canAnnounce: allowed.has(c.chat_id),
+      panelRole,
+    };
+  });
 }
 
 export async function overrideList() {
