@@ -27,7 +27,7 @@
     return escapeHtml(tx("gallery.play", "Ijro etish"));
   }
 
-  function card(item) {
+  function card(item, index = 0) {
     const title = escapeHtml(item.title || tx("gallery.item", "Material"));
     const caption = escapeHtml(item.caption || "");
     const poster = String(item.poster || "").trim();
@@ -57,7 +57,7 @@
         </button>
       </div>`;
     }
-    return `<figure class="gallery-card" data-kind="${escapeHtml(item.type)}" data-reveal>
+    return `<figure class="gallery-card" data-kind="${escapeHtml(item.type)}" data-reveal-item style="--i:${index}">
       <div class="gallery-media">${media}</div>
       <figcaption>
         <strong>${title}</strong>
@@ -155,7 +155,19 @@
     }
     grid.innerHTML = visible.map(card).join("");
     bindVideoThumbs();
-    if (typeof window.ttatiWatchReveal === "function") window.ttatiWatchReveal(grid);
+    const section = grid.closest("[data-section-reveal]");
+    if (section) {
+      grid.querySelectorAll("[data-reveal-item]").forEach((el) => {
+        el.classList.add("reveal-item");
+      });
+      if (section.classList.contains("is-reveal-in")) {
+        grid.querySelectorAll(".reveal-item").forEach((el) => {
+          el.style.opacity = "1";
+          el.style.transform = "none";
+          el.style.filter = "none";
+        });
+      }
+    }
   }
 
   if (filters) {
@@ -171,7 +183,6 @@
   }
 
   bindVideoThumbs();
-  if (typeof window.ttatiWatchReveal === "function") window.ttatiWatchReveal(grid);
 
   fetch("data/gallery.json", { cache: "no-store" })
     .then((res) => (res.ok ? res.json() : null))

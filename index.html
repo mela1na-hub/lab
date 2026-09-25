@@ -13,10 +13,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20260924i" />
+  <link rel="stylesheet" href="styles.css?v=52" />
+  <link rel="stylesheet" href="hero-anim.css?v=14" />
 </head>
-<body>
-  <header class="site-header">
+<body class="has-hero-autohide">
+  <header class="site-header" data-autohide-header>
     <div class="container header-inner">
       <a class="brand" href="index.html">
         <span class="brand-mark" aria-hidden="true"></span>
@@ -43,39 +44,291 @@
   </header>
 
   <main>
-    <section class="hero">
-      <div class="hero-media" aria-hidden="true">
-        <img
-          data-site-img="hero"
-          src="images/bo-linma.png"
-          alt=""
-          width="1200"
-          height="1600"
-        />
-        <span class="hero-dust"></span>
-        <span class="hero-dust hero-dust-2"></span>
-        <span class="hero-dust hero-dust-3"></span>
+    <section class="hero hero-has-anim">
+      <div class="hero-stage" id="hero-stage">
+        <svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" role="img"
+             aria-label="Tuproqshunoslik va agrokimyoviy tadqiqotlar instituti — animatsiyali logotip: tuproq kesimi, o‘sayotgan nihol va ildizdan bargga ko‘tarilayotgan azot, fosfor, kaliy.">
+          <defs>
+            <linearGradient id="heroSky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#04100c" />
+              <stop offset="42%" stop-color="#0a2419" />
+              <stop offset="78%" stop-color="#14402f" />
+              <stop offset="100%" stop-color="#2a5a3c" />
+            </linearGradient>
+            <radialGradient id="heroHalo">
+              <stop offset="0%" stop-color="#ffc861" stop-opacity="0.55" />
+              <stop offset="38%" stop-color="#f2a13c" stop-opacity="0.16" />
+              <stop offset="100%" stop-color="#f2a13c" stop-opacity="0" />
+            </radialGradient>
+            <radialGradient id="heroCore">
+              <stop offset="0%" stop-color="#fff3d0" stop-opacity="0.95" />
+              <stop offset="60%" stop-color="#ffc861" stop-opacity="0.55" />
+              <stop offset="100%" stop-color="#ffc861" stop-opacity="0" />
+            </radialGradient>
+            <linearGradient id="heroRayG" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%" stop-color="#ffd691" stop-opacity="0.42" />
+              <stop offset="55%" stop-color="#ffd691" stop-opacity="0.10" />
+              <stop offset="100%" stop-color="#ffd691" stop-opacity="0" />
+            </linearGradient>
+            <linearGradient id="heroStemG" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%" stop-color="#2b6f3a" />
+              <stop offset="55%" stop-color="#46a355" />
+              <stop offset="100%" stop-color="#7ce68c" />
+            </linearGradient>
+            <linearGradient id="heroLeafG" x1="0" y1="0" x2="1" y2="0.4">
+              <stop offset="0%" stop-color="#279041" />
+              <stop offset="55%" stop-color="#4dc163" />
+              <stop offset="100%" stop-color="#8bf09a" />
+            </linearGradient>
+            <linearGradient id="heroRootG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f3ddbb" />
+              <stop offset="100%" stop-color="#b0824d" />
+            </linearGradient>
+            <linearGradient id="heroShineG" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#fff" stop-opacity="0" />
+              <stop offset="45%" stop-color="#fff" stop-opacity="0.9" />
+              <stop offset="55%" stop-color="#fff" stop-opacity="0.9" />
+              <stop offset="100%" stop-color="#fff" stop-opacity="0" />
+            </linearGradient>
+            <radialGradient id="heroBloomG">
+              <stop offset="0%" stop-color="#ffe6a8" stop-opacity="1" />
+              <stop offset="100%" stop-color="#ffe6a8" stop-opacity="0" />
+            </radialGradient>
+            <filter id="heroSoft" x="-60%" y="-60%" width="220%" height="220%">
+              <feGaussianBlur stdDeviation="7" />
+            </filter>
+            <clipPath id="heroStemClip" clipPathUnits="userSpaceOnUse">
+              <rect class="stem-wipe" x="556" y="288" width="88" height="220" />
+            </clipPath>
+            <clipPath id="heroClipL1" clipPathUnits="userSpaceOnUse"><rect x="0" y="108" width="1200" height="62" /></clipPath>
+            <clipPath id="heroClipL2" clipPathUnits="userSpaceOnUse"><rect x="0" y="170" width="1200" height="64" /></clipPath>
+            <mask id="heroShineMask" maskUnits="userSpaceOnUse" x="0" y="80" width="1200" height="180">
+              <rect class="shine" x="-520" y="100" width="420" height="140" fill="url(#heroShineG)" />
+            </mask>
+            <g id="heroHex">
+              <polygon points="0,-26 22,-13 22,13 0,26 -22,13 -22,-13" fill="none" stroke="#9fe6c3" stroke-width="1.4" />
+              <circle r="3" fill="#9fe6c3" />
+              <circle cx="0" cy="-26" r="2.6" fill="#9fe6c3" />
+              <circle cx="22" cy="13" r="2.6" fill="#9fe6c3" />
+              <circle cx="-22" cy="13" r="2.6" fill="#9fe6c3" />
+            </g>
+          </defs>
+
+          <rect x="0" y="0" width="1200" height="800" fill="url(#heroSky)" />
+
+          <g style="mix-blend-mode: screen">
+            <g transform="translate(978 392)">
+              <polygon class="ray" style="--i:0; --o:.30" points="0,0 -10,-620 10,-620" transform="rotate(-6)" fill="url(#heroRayG)" />
+              <polygon class="ray" style="--i:1; --o:.22" points="0,0 -7,-600 7,-600" transform="rotate(-20)" fill="url(#heroRayG)" />
+              <polygon class="ray" style="--i:2; --o:.26" points="0,0 -12,-580 12,-580" transform="rotate(-34)" fill="url(#heroRayG)" />
+              <polygon class="ray" style="--i:3; --o:.18" points="0,0 -6,-560 6,-560" transform="rotate(-48)" fill="url(#heroRayG)" />
+              <polygon class="ray" style="--i:4; --o:.24" points="0,0 -9,-540 9,-540" transform="rotate(-62)" fill="url(#heroRayG)" />
+              <polygon class="ray" style="--i:5; --o:.16" points="0,0 -7,-500 7,-500" transform="rotate(-76)" fill="url(#heroRayG)" />
+              <polygon class="ray" style="--i:6; --o:.20" points="0,0 -8,-520 8,-520" transform="rotate(8)" fill="url(#heroRayG)" />
+            </g>
+          </g>
+
+          <circle class="sun-halo" cx="978" cy="392" r="270" fill="url(#heroHalo)" />
+          <circle class="sun-core" cx="978" cy="392" r="52" fill="url(#heroCore)" />
+
+          <g class="lattice">
+            <g transform="translate(148 148)">
+              <use href="#heroHex" x="0" y="0" /><use href="#heroHex" x="44" y="26" /><use href="#heroHex" x="0" y="52" />
+              <line x1="0" y1="0" x2="44" y2="26" stroke="#9fe6c3" stroke-width="1.2" />
+              <line x1="44" y1="26" x2="0" y2="52" stroke="#9fe6c3" stroke-width="1.2" />
+            </g>
+          </g>
+          <g class="lattice">
+            <g transform="translate(1058 214)">
+              <use href="#heroHex" x="0" y="0" /><use href="#heroHex" x="-44" y="26" />
+              <line x1="0" y1="0" x2="-44" y2="26" stroke="#9fe6c3" stroke-width="1.2" />
+            </g>
+          </g>
+
+          <g fill="#cdf3dd">
+            <circle class="speck" style="--i:0" cx="232" cy="330" r="2.6" />
+            <circle class="speck" style="--i:1" cx="392" cy="196" r="2" />
+            <circle class="speck" style="--i:2" cx="486" cy="392" r="1.8" />
+            <circle class="speck" style="--i:3" cx="742" cy="262" r="2.4" />
+            <circle class="speck" style="--i:4" cx="852" cy="424" r="2" />
+            <circle class="speck" style="--i:5" cx="1104" cy="318" r="2.2" />
+            <circle class="speck" style="--i:6" cx="128" cy="436" r="2" />
+            <circle class="speck" style="--i:7" cx="306" cy="456" r="1.6" />
+            <circle class="speck" style="--i:8" cx="928" cy="204" r="1.8" />
+            <circle class="speck" style="--i:9" cx="660" cy="172" r="1.6" />
+            <circle class="speck" style="--i:10" cx="1042" cy="468" r="2.2" />
+            <circle class="speck" style="--i:11" cx="196" cy="252" r="1.7" />
+          </g>
+
+          <g clip-path="url(#heroClipL1)">
+            <text class="title-line" style="--i:0" x="600" y="158" text-anchor="middle"
+                  font-size="52" font-weight="800" letter-spacing="-0.6" fill="#f4f8f5">Tuproqshunoslik va agrokimyoviy</text>
+          </g>
+          <g clip-path="url(#heroClipL2)">
+            <text class="title-line" style="--i:1" x="600" y="218" text-anchor="middle"
+                  font-size="52" font-weight="800" letter-spacing="-0.6" fill="#f4f8f5">tadqiqotlar instituti</text>
+          </g>
+          <g mask="url(#heroShineMask)">
+            <text x="600" y="158" text-anchor="middle" font-size="52" font-weight="800" letter-spacing="-0.6" fill="#fff6dc">Tuproqshunoslik va agrokimyoviy</text>
+            <text x="600" y="218" text-anchor="middle" font-size="52" font-weight="800" letter-spacing="-0.6" fill="#fff6dc">tadqiqotlar instituti</text>
+          </g>
+          <rect class="rule" x="482" y="250" width="236" height="2.5" rx="1.25" fill="#f5c451" />
+          <text class="tagline" style="--i:0" x="545" y="286" text-anchor="end" font-size="15" font-weight="500"
+                letter-spacing="4.2" fill="#a9c3b6">TUPROQ UNUMDORLIGI ·</text>
+          <text class="tagline" style="--i:1" x="655" y="286" text-anchor="start" font-size="15" font-weight="500"
+                letter-spacing="4.2" fill="#a9c3b6">AGROKIMYO · ILMIY TAHLIL</text>
+
+          <path class="hill" style="--i:0; --o:.5" fill="#1d4c38"
+                d="M-40 468 C 150 444, 300 458, 470 450 C 640 442, 800 456, 970 448 C 1090 443, 1180 452, 1250 449 L1250 510 L-40 510 Z" />
+          <path class="hill" style="--i:1; --o:.72" fill="#173d2d"
+                d="M-40 482 C 120 462, 280 476, 440 470 C 620 463, 790 478, 950 470 C 1080 464, 1180 474, 1250 471 L1250 510 L-40 510 Z" />
+          <path class="hill" style="--i:2; --o:1" fill="#123123"
+                d="M-40 494 C 160 480, 340 492, 520 487 C 700 482, 860 494, 1010 489 C 1120 485, 1190 492, 1250 490 L1250 510 L-40 510 Z" />
+          <g class="hill" style="--i:2; --o:.22" stroke="#7fd39a" stroke-width="1.2">
+            <line x1="120" y1="498" x2="1090" y2="498" />
+            <line x1="180" y1="503" x2="1030" y2="503" />
+          </g>
+
+          <rect class="layer" style="--i:0" x="0" y="760" width="1200" height="80" fill="#615b54" />
+          <rect class="layer" style="--i:1" x="0" y="684" width="1200" height="78" fill="#a07c52" />
+          <rect class="layer" style="--i:2" x="0" y="596" width="1200" height="90" fill="#74492a" />
+          <rect class="layer" style="--i:3" x="0" y="532" width="1200" height="66" fill="#4a3320" />
+          <rect class="layer" style="--i:4" x="0" y="506" width="1200" height="28" fill="#2a1d12" />
+
+          <g fill="#00000042">
+            <ellipse class="pebble" style="--i:0" cx="206" cy="628" rx="15" ry="9" />
+            <ellipse class="pebble" style="--i:1" cx="404" cy="702" rx="11" ry="7" />
+            <ellipse class="pebble" style="--i:2" cx="822" cy="642" rx="17" ry="10" />
+            <ellipse class="pebble" style="--i:3" cx="1030" cy="716" rx="13" ry="8" />
+            <ellipse class="pebble" style="--i:4" cx="124" cy="696" rx="10" ry="6" />
+            <ellipse class="pebble" style="--i:5" cx="908" cy="772" rx="14" ry="8" />
+            <ellipse class="pebble" style="--i:6" cx="512" cy="650" rx="9" ry="6" />
+            <ellipse class="pebble" style="--i:7" cx="702" cy="728" rx="12" ry="7" />
+            <ellipse class="pebble" style="--i:8" cx="310" cy="768" rx="16" ry="8" />
+            <ellipse class="pebble" style="--i:9" cx="612" cy="668" rx="8" ry="5" />
+          </g>
+
+          <path class="ground-line draw" pathLength="1" d="M0 506 H1200" stroke="#c9a16a" stroke-width="2.5" fill="none" />
+          <path class="rim draw" pathLength="1" d="M0 503 H1200" stroke="#ffd19199" stroke-width="1.6" fill="none" />
+
+          <g fill="none" stroke="url(#heroRootG)" stroke-linecap="round">
+            <path class="root draw" style="--i:0" pathLength="1" stroke-width="7.5" d="M600 506 C 601 552, 606 592, 599 634 C 594 664, 601 680, 597 706" />
+            <path class="root draw" style="--i:1" pathLength="1" stroke-width="5" d="M600 538 C 570 556, 546 582, 532 624" />
+            <path class="root draw" style="--i:2" pathLength="1" stroke-width="5" d="M601 554 C 634 572, 656 598, 668 638" />
+            <path class="root draw" style="--i:3" pathLength="1" stroke-width="3.6" d="M598 596 C 576 614, 564 638, 558 668" />
+            <path class="root draw" style="--i:4" pathLength="1" stroke-width="3.6" d="M600 620 C 622 636, 632 658, 636 684" />
+            <path class="root draw" style="--i:5" pathLength="1" stroke-width="2.8" d="M599 662 C 582 682, 574 702, 572 722" />
+            <path class="root draw" style="--i:6" pathLength="1" stroke-width="2.8" d="M601 686 C 618 704, 624 722, 626 740" />
+          </g>
+          <g fill="none" stroke="#efd6ad" stroke-width="1.7" stroke-linecap="round" opacity="0.85">
+            <path class="root-hair draw" style="--i:0" pathLength="1" d="M552 600 L 530 592" />
+            <path class="root-hair draw" style="--i:1" pathLength="1" d="M648 612 L 670 602" />
+            <path class="root-hair draw" style="--i:2" pathLength="1" d="M570 646 L 548 648" />
+            <path class="root-hair draw" style="--i:3" pathLength="1" d="M630 658 L 652 662" />
+            <path class="root-hair draw" style="--i:4" pathLength="1" d="M596 672 L 576 684" />
+            <path class="root-hair draw" style="--i:5" pathLength="1" d="M601 694 L 622 704" />
+            <path class="root-hair draw" style="--i:6" pathLength="1" d="M566 704 L 548 712" />
+            <path class="root-hair draw" style="--i:7" pathLength="1" d="M628 726 L 648 734" />
+          </g>
+
+          <g fill="#d8b071">
+            <ellipse class="puff" style="--i:0" cx="566" cy="506" rx="26" ry="8" />
+            <ellipse class="puff" style="--i:1" cx="634" cy="506" rx="26" ry="8" />
+            <ellipse class="puff" style="--i:2" cx="600" cy="504" rx="40" ry="7" />
+          </g>
+          <g class="seed">
+            <ellipse cx="600" cy="492" rx="12" ry="15.5" fill="#c58f4e" />
+            <ellipse cx="596" cy="487" rx="4" ry="6" fill="#e8c491" opacity="0.75" />
+          </g>
+
+          <g class="plant">
+            <g clip-path="url(#heroStemClip)">
+              <path fill="url(#heroStemG)"
+                    d="M593 508 C 591 452, 597 400, 596.5 350 C 596 322, 598.5 308, 598.5 298
+                       L601.5 298 C 601.5 308, 604 322, 603.5 350 C 603 400, 609 452, 607 508 Z" />
+            </g>
+            <g class="leaf-g"><g transform="translate(600 440) rotate(-6)">
+              <path class="leaf" style="--i:0" fill="url(#heroLeafG)" d="M0 0 C 26 -34, 66 -44, 98 -27 C 68 -3, 26 11, 0 0 Z" />
+              <path class="vein" style="--i:0" fill="none" stroke="#0d3b1c" stroke-width="1.6" d="M3 -1 C 32 -12, 66 -21, 95 -26" />
+            </g></g>
+            <g class="leaf-g mir" style="animation-delay:-1.4s"><g transform="translate(600 452) scale(-1 1) rotate(-8)">
+              <path class="leaf mir" style="--i:1" fill="url(#heroLeafG)" d="M0 0 C 26 -34, 66 -44, 98 -27 C 68 -3, 26 11, 0 0 Z" />
+              <path class="vein mir" style="--i:1" fill="none" stroke="#0d3b1c" stroke-width="1.6" d="M3 -1 C 32 -12, 66 -21, 95 -26" />
+            </g></g>
+            <g class="leaf-g mir" style="animation-delay:-2.7s"><g transform="translate(601 382) scale(-1 1) rotate(-14)">
+              <path class="leaf mir" style="--i:2" fill="url(#heroLeafG)" d="M0 0 C 21 -27, 54 -36, 80 -22 C 55 -2, 21 9, 0 0 Z" />
+              <path class="vein mir" style="--i:2" fill="none" stroke="#0d3b1c" stroke-width="1.4" d="M2 -1 C 26 -10, 54 -17, 77 -21" />
+            </g></g>
+            <g class="leaf-g" style="animation-delay:-3.8s"><g transform="translate(601 370) rotate(-16)">
+              <path class="leaf" style="--i:3" fill="url(#heroLeafG)" d="M0 0 C 21 -27, 54 -36, 80 -22 C 55 -2, 21 9, 0 0 Z" />
+              <path class="vein" style="--i:3" fill="none" stroke="#0d3b1c" stroke-width="1.4" d="M2 -1 C 26 -10, 54 -17, 77 -21" />
+            </g></g>
+            <g transform="translate(600 322) rotate(-46)">
+              <path class="leaf" style="--i:4" fill="#8bf09a" d="M0 0 C 12 -16, 30 -20, 45 -12 C 30 0, 12 6, 0 0 Z" />
+            </g>
+            <g transform="translate(600 322) scale(-1 1) rotate(-46)">
+              <path class="leaf mir" style="--i:5" fill="#8bf09a" d="M0 0 C 12 -16, 30 -20, 45 -12 C 30 0, 12 6, 0 0 Z" />
+            </g>
+            <path class="pulse" pathLength="1" fill="none" stroke="#bdf7c8" stroke-width="5" stroke-linecap="round"
+                  stroke-dasharray="0.14 0.86" filter="url(#heroSoft)"
+                  d="M600 508 C 598 452, 604 400, 603 350 C 602 322, 600 308, 600 298" />
+          </g>
+
+          <g fill="none" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="3 13">
+            <path class="flow" style="--i:0" stroke="#46b7f5" d="M268 572 C 356 562, 462 580, 532 620" />
+            <path class="flow" style="--i:1" stroke="#fb8f3d" d="M932 594 C 848 580, 736 594, 668 634" />
+            <path class="flow" style="--i:2" stroke="#b98bf2" d="M600 714 L 600 700" />
+          </g>
+          <g>
+            <circle class="particle" style="--i:0; --dur:2.6s; offset-path: path('M268 572 C 356 562, 462 580, 532 620')" cx="0" cy="0" r="4.5" fill="#8fd6fb" />
+            <circle class="particle" style="--pd:1.3s; --dur:2.6s; offset-path: path('M268 572 C 356 562, 462 580, 532 620')" cx="0" cy="0" r="3.2" fill="#8fd6fb" />
+            <circle class="particle" style="--i:2; --dur:2.9s; offset-path: path('M932 594 C 848 580, 736 594, 668 634')" cx="0" cy="0" r="4.5" fill="#fdbb84" />
+            <circle class="particle" style="--pd:1.45s; --dur:2.9s; offset-path: path('M932 594 C 848 580, 736 594, 668 634')" cx="0" cy="0" r="3.2" fill="#fdbb84" />
+            <circle class="particle" style="--i:4; --dur:1.5s; offset-path: path('M600 714 L 600 700')" cx="0" cy="0" r="3.6" fill="#d4b6f8" />
+          </g>
+
+          <g font-weight="800" font-size="29" text-anchor="middle">
+            <g class="badge" style="--i:0"><g transform="translate(238 572)">
+              <g class="orbit" style="--i:0; --spin:11s" fill="none" stroke="#46b7f5" stroke-width="1.3" opacity="0.55">
+                <ellipse rx="47" ry="18" /><ellipse rx="47" ry="18" transform="rotate(60)" /><ellipse rx="47" ry="18" transform="rotate(120)" />
+              </g>
+              <circle r="31" fill="#0c2436" stroke="#46b7f5" stroke-width="2.4" />
+              <circle r="31" fill="#46b7f5" opacity="0.17" />
+              <text y="10" fill="#8fd6fb">N</text>
+              <text y="52" font-size="12" font-weight="600" letter-spacing="2.4" fill="#7fb8d6">AZOT</text>
+            </g></g>
+            <g class="badge" style="--i:1"><g transform="translate(962 594)">
+              <g class="orbit" style="--i:1; --spin:13s" fill="none" stroke="#fb8f3d" stroke-width="1.3" opacity="0.55">
+                <ellipse rx="47" ry="18" /><ellipse rx="47" ry="18" transform="rotate(60)" /><ellipse rx="47" ry="18" transform="rotate(120)" />
+              </g>
+              <circle r="31" fill="#331c0d" stroke="#fb8f3d" stroke-width="2.4" />
+              <circle r="31" fill="#fb8f3d" opacity="0.17" />
+              <text y="10" fill="#fdbb84">P</text>
+              <text y="52" font-size="12" font-weight="600" letter-spacing="2.4" fill="#d8a173">FOSFOR</text>
+            </g></g>
+            <g class="badge" style="--i:2"><g transform="translate(600 746)">
+              <g class="orbit" style="--i:2; --spin:15s" fill="none" stroke="#b98bf2" stroke-width="1.3" opacity="0.55">
+                <ellipse rx="45" ry="17" /><ellipse rx="45" ry="17" transform="rotate(60)" /><ellipse rx="45" ry="17" transform="rotate(120)" />
+              </g>
+              <circle r="31" fill="#241638" stroke="#b98bf2" stroke-width="2.4" />
+              <circle r="31" fill="#b98bf2" opacity="0.17" />
+              <text y="10" fill="#d4b6f8">K</text>
+            </g></g>
+          </g>
+
+          <ellipse class="bloom" cx="600" cy="230" rx="720" ry="330" fill="url(#heroBloomG)" style="mix-blend-mode: screen" />
+        </svg>
+        <div class="grain" aria-hidden="true"></div>
+        <div class="vignette" aria-hidden="true"></div>
       </div>
-      <div class="hero-scrim"></div>
-      <div class="hero-content">
-        <p class="hero-brand hero-in" data-i18n="brand.institute">Tuproqshunoslik va agrokimyoviy tadqiqotlar instituti</p>
-        <h1 class="hero-in" data-i18n="hero.h1">Viloyat tuproq tahlili&nbsp;— laborator aniqlik bilan</h1>
-        <p class="hero-lead hero-in" data-i18n="hero.lead">
-          Qashqadaryo shahar va tumanlaridan olingan namunalarni agrokimyoviy va mexanik tahlil qilamiz,
-          amaliy tavsiyalar tayyorlaymiz.
-        </p>
-        <div class="hero-actions hero-in">
-          <a class="btn btn-primary" href="hisobotlar.html" data-i18n="nav.reports">Hisobotlar</a>
-          <a class="btn btn-ghost" href="#aloqa" data-i18n="hero.contact">Bog‘lanish</a>
-        </div>
-      </div>
+      <h1 class="sr-only" data-i18n="brand.institute">Tuproqshunoslik va agrokimyoviy tadqiqotlar instituti</h1>
     </section>
 
-    <section id="haqida" class="section">
+    <section id="haqida" class="section" data-section-reveal>
       <div class="container narrow">
-        <p class="eyebrow" data-i18n="about.eyebrow">Haqida</p>
-        <h2 data-i18n="about.h2">Bo‘linma haqida</h2>
-        <p class="lead">
+        <p class="eyebrow" data-i18n="about.eyebrow" data-reveal-words>Haqida</p>
+        <h2 data-i18n="about.h2" data-reveal-words>Bo‘linma haqida</h2>
+        <p class="lead" data-reveal-block>
           <span data-i18n="about.p1">Qishloq xo‘jaligi vazirligi tizimidagi Tuproqshunoslik va agrokimyoviy tadqiqotlar institutining Qashqadaryo mintaqaviy bo‘linmasi. Viloyatdagi shahar va tumanlardan olingan tuproq namunalarini tahlil qiladi, agrokimyoviy kartogrammalar va amaliy tavsiyalar tayyorlaydi. Manzil: </span>
           <span data-contact="address">Qarshi, Ravoq MFY, Islom Karimov ko‘chasi, 62-uy</span>
           <span data-i18n="about.p2"> (VMQ-389, 19.07.2022).</span>
@@ -83,25 +336,25 @@
       </div>
     </section>
 
-    <section id="xizmatlar" class="section section-muted">
+    <section id="xizmatlar" class="section section-muted" data-section-reveal>
       <div class="container">
-        <p class="eyebrow" data-i18n="services.eyebrow">Xizmatlar</p>
-        <h2 data-i18n="services.h2">Laboratoriya xizmatlari</h2>
-        <p class="section-intro" data-i18n="services.intro">Asosiy tahlil yo‘nalishlari — dala va laborator natijalar asosida.</p>
+        <p class="eyebrow" data-i18n="services.eyebrow" data-reveal-words>Xizmatlar</p>
+        <h2 data-i18n="services.h2" data-reveal-words>Laboratoriya xizmatlari</h2>
+        <p class="section-intro" data-i18n="services.intro" data-reveal-block>Asosiy tahlil yo‘nalishlari — dala va laborator natijalar asosida.</p>
         <ul class="service-list">
-          <li data-reveal>
+          <li data-reveal-item style="--i:0">
             <h3 data-i18n="services.agro.h">Agrokimyoviy tahlil</h3>
             <p data-i18n="services.agro.p">N-P-K, pH, organik modda va ozuqa rejimini baholash.</p>
           </li>
-          <li data-reveal>
+          <li data-reveal-item style="--i:1">
             <h3 data-i18n="services.grain.h">Granulometrik tarkib</h3>
             <p data-i18n="services.grain.p">Qum, chang va loy ulushlari; USCS klassifikatsiyasi.</p>
           </li>
-          <li data-reveal>
+          <li data-reveal-item style="--i:2">
             <h3 data-i18n="services.proctor.h">Proctor va CBR</h3>
             <p data-i18n="services.proctor.p">Optimal namlik, maksimal zichlik va yuk ko‘tarish ko‘rsatkichlari.</p>
           </li>
-          <li data-reveal>
+          <li data-reveal-item style="--i:3">
             <h3 data-i18n="services.report.h">Hisobot va tavsiyalar</h3>
             <p data-i18n="services.report.p">Tuman/shahar kesimida laborator hisobotlar va amaliy yo‘riqnoma.</p>
           </li>
@@ -109,18 +362,18 @@
       </div>
     </section>
 
-    <section id="galereya" class="section section-muted">
+    <section id="galereya" class="section section-muted" data-section-reveal>
       <div class="container">
-        <p class="eyebrow" data-i18n="gallery.eyebrow">Galereya</p>
-        <h2 data-i18n="gallery.h2">Rasmlar va videolar</h2>
-        <p class="section-intro" data-i18n="gallery.intro">Laboratoriya, dala ishlari va tadbirlar.</p>
+        <p class="eyebrow" data-i18n="gallery.eyebrow" data-reveal-words>Galereya</p>
+        <h2 data-i18n="gallery.h2" data-reveal-words>Rasmlar va videolar</h2>
+        <p class="section-intro" data-i18n="gallery.intro" data-reveal-block>Laboratoriya, dala ishlari va tadbirlar.</p>
         <div class="gallery-filters" data-gallery-filters>
-          <button type="button" class="chip is-active" data-filter="all" data-i18n="gallery.all">Barchasi</button>
-          <button type="button" class="chip" data-filter="photo" data-i18n="gallery.photos">Rasmlar</button>
-          <button type="button" class="chip" data-filter="video" data-i18n="gallery.videos">Videolar</button>
+          <button type="button" class="chip is-active" data-filter="all" data-i18n="gallery.all" data-reveal-item style="--i:0">Barchasi</button>
+          <button type="button" class="chip" data-filter="photo" data-i18n="gallery.photos" data-reveal-item style="--i:1">Rasmlar</button>
+          <button type="button" class="chip" data-filter="video" data-i18n="gallery.videos" data-reveal-item style="--i:2">Videolar</button>
         </div>
         <div class="gallery-grid" data-gallery-grid>
-          <figure class="gallery-card" data-kind="video" data-reveal>
+          <figure class="gallery-card" data-kind="video" data-reveal-item style="--i:0">
             <div class="gallery-media">
               <div class="gallery-video-wrap" data-gallery-video data-src="media/gallery/g202609241513436765.mp4">
                 <img class="gallery-poster" src="images/gallery/g202609241513436765-poster.png" alt="Tuproqshunoslik va agrokimyo ilmiy tadqiqot institutining innovattsion mobil laboratoriyasi" loading="lazy" width="640" height="400" />
@@ -133,25 +386,25 @@
               <strong>Tuproqshunoslik va agrokimyo ilmiy tadqiqot institutining innovattsion mobil laboratoriyasi</strong>
             </figcaption>
           </figure>
-          <figure class="gallery-card" data-kind="photo" data-reveal>
+          <figure class="gallery-card" data-kind="photo" data-reveal-item style="--i:1">
             <div class="gallery-media">
               <img src="images/gallery/g202608280718369797.jpg" alt="laboratoriya mashinasi" loading="lazy" width="640" height="400" />
             </div>
             <figcaption><strong>laboratoriya mashinasi</strong></figcaption>
           </figure>
-          <figure class="gallery-card" data-kind="photo" data-reveal>
+          <figure class="gallery-card" data-kind="photo" data-reveal-item style="--i:2">
             <div class="gallery-media">
               <img src="images/gallery/g202608280718164693.jpg" alt="laboratoriya" loading="lazy" width="640" height="400" />
             </div>
             <figcaption><strong>laboratoriya</strong></figcaption>
           </figure>
-          <figure class="gallery-card" data-kind="photo" data-reveal>
+          <figure class="gallery-card" data-kind="photo" data-reveal-item style="--i:3">
             <div class="gallery-media">
               <img src="images/gallery/g202608280717554483.jpg" alt="ish joyi" loading="lazy" width="640" height="400" />
             </div>
             <figcaption><strong>ish joyi</strong></figcaption>
           </figure>
-          <figure class="gallery-card" data-kind="photo" data-reveal>
+          <figure class="gallery-card" data-kind="photo" data-reveal-item style="--i:4">
             <div class="gallery-media">
               <img src="images/gallery/g202608280717186256.jpg" alt="tuproqshunoslik laboratoriyasi" loading="lazy" width="640" height="400" />
             </div>
@@ -317,7 +570,8 @@
   </footer>
 
   <script src="i18n.js?v=20260924i"></script>
-  <script src="site.js?v=20260924i"></script>
-  <script src="gallery.js?v=17"></script>
+  <script src="site.js?v=20260925f"></script>
+  <script src="gallery.js?v=18"></script>
+  <script src="hero-anim.js?v=8"></script>
 </body>
 </html>

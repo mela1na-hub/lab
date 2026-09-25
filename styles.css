@@ -141,6 +141,33 @@ p {
   border-bottom: 1px solid var(--line);
 }
 
+body.has-hero-autohide .site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  transform: translateY(-110%);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.38s cubic-bezier(0.22, 0.9, 0.3, 1),
+    opacity 0.28s ease;
+  box-shadow: 0 10px 28px rgba(26, 46, 31, 0.08);
+}
+
+body.has-hero-autohide.is-header-shown .site-header {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.has-hero-autohide .site-header {
+    transition: none;
+  }
+}
+
 .header-inner {
   display: flex;
   align-items: center;
@@ -558,6 +585,87 @@ p {
 /* Sections */
 .section {
   padding: 4.5rem 0;
+}
+
+#haqida.section {
+  padding-top: 2rem;
+  padding-bottom: 3.25rem;
+}
+
+.reveal-word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.65em);
+  filter: blur(5px);
+  transition:
+    opacity 0.6s cubic-bezier(0.22, 0.9, 0.3, 1),
+    transform 0.6s cubic-bezier(0.22, 0.9, 0.3, 1),
+    filter 0.6s ease;
+  transition-delay: calc(var(--line-delay, 0s) + var(--w, 0) * 0.05s);
+}
+
+[data-section-reveal] .eyebrow[data-reveal-words] {
+  --line-delay: 0s;
+}
+
+[data-section-reveal] h2[data-reveal-words] {
+  --line-delay: 0.1s;
+}
+
+.reveal-block {
+  opacity: 0;
+  transform: translateY(1.1rem);
+  filter: blur(6px);
+  transition:
+    opacity 0.8s cubic-bezier(0.22, 0.9, 0.3, 1) 0.28s,
+    transform 0.8s cubic-bezier(0.22, 0.9, 0.3, 1) 0.28s,
+    filter 0.8s ease 0.28s;
+}
+
+.reveal-item,
+.service-list li.reveal-item,
+.gallery-filters .reveal-item,
+.gallery-grid .reveal-item {
+  opacity: 0;
+  transform: translateY(1.25rem);
+  filter: blur(5px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 0.9, 0.3, 1),
+    transform 0.7s cubic-bezier(0.22, 0.9, 0.3, 1),
+    filter 0.7s ease,
+    box-shadow 0.3s ease;
+  transition-delay: calc(0.38s + var(--i, 0) * 0.1s);
+}
+
+[data-section-reveal].is-reveal-in .reveal-word,
+[data-section-reveal].is-reveal-in .reveal-block,
+[data-section-reveal].is-reveal-in .reveal-item {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+[data-section-reveal].is-reveal-in .service-list li.reveal-item:hover {
+  transform: translateY(-4px);
+}
+
+.gallery-filters .reveal-item {
+  transition-delay: calc(0.32s + var(--i, 0) * 0.08s);
+}
+
+.gallery-grid .reveal-item {
+  transition-delay: calc(0.5s + var(--i, 0) * 0.1s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-word,
+  .reveal-block,
+  .reveal-item {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
+  }
 }
 
 .section-muted {

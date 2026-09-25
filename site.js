@@ -292,17 +292,22 @@
   const revealIo = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add("is-in");
-        revealIo.unobserve(entry.target);
+        const el = entry.target;
+        if (entry.isIntersecting) {
+          // Transition qayta ishlashi uchun bir frame “off” holat
+          if (!el.classList.contains("is-in")) {
+            requestAnimationFrame(() => el.classList.add("is-in"));
+          }
+        } else {
+          el.classList.remove("is-in");
+        }
       });
     },
-    { threshold: 0.14, rootMargin: "0px 0px -8% 0px" }
+    { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
   );
 
   function watchReveal(root) {
     (root || document).querySelectorAll("[data-reveal]").forEach((el) => {
-      if (el.classList.contains("is-in")) return;
       revealIo.observe(el);
     });
   }
@@ -316,4 +321,121 @@
       childList: true,
     });
   }
+
+  /* Bo‘lim matnlari — so‘z/blok/kartochka animatsiyasi (scrollda qayta) */
+  (function initSectionReveals() {
+    const sections = [...document.querySelectorAll("[data-section-reveal]")];
+    if (!sections.length) return;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function splitWords(el) {
+      if (el.querySelector(".reveal-word")) return;
+      const text = el.textContent.replace(/\s+/g, " ").trim();
+      if (!text) return;
+      el.textContent = "";
+      const parts = text.split(" ");
+      parts.forEach((word, i) => {
+        const span = document.createElement("span");
+        span.className = "reveal-word";
+        span.textContent = word;
+        span.style.setProperty("--w", String(i));
+        el.appendChild(span);
+        if (i < parts.length - 1) el.appendChild(document.createTextNode(" "));
+      });
+    }
+
+    function prepare(section) {
+      if (section.dataset.revealPrepared === "1") return;
+      section.dataset.revealPrepared = "1";
+      section.querySelectorAll("[data-reveal-words]").forEach(splitWords);
+      section.querySelectorAll("[data-reveal-block]").forEach((el) => {
+        el.classList.add("reveal-block");
+      });
+      section.querySelectorAll("[data-reveal-item]").forEach((el, i) => {
+        if (!el.style.getPropertyValue("--i")) el.style.setProperty("--i", String(i));
+        el.classList.add("reveal-item");
+      });
+    }
+
+    function clearInlineReveal(section) {
+      section.querySelectorAll(".reveal-item, .reveal-block, .reveal-word").forEach((el) => {
+        el.style.opacity = "";
+        el.style.transform = "";
+        el.style.filter = "";
+      });
+    }
+
+    function activate(section) {
+      prepare(section);
+      clearInlineReveal(section);
+      // Brauzer transitionni qayta o‘qishi uchun reflow
+      section.classList.remove("is-reveal-in");
+      void section.offsetWidth;
+      requestAnimationFrame(() => section.classList.add("is-reveal-in"));
+    }
+
+    function deactivate(section) {
+      section.classList.remove("is-reveal-in");
+      clearInlineReveal(section);
+    }
+
+    sections.forEach((section) => {
+      prepare(section);
+      if (reduceMotion) {
+        section.classList.add("is-reveal-in");
+        return;
+      }
+      const io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && entry.intersectionRatio >= 0.12) {
+              if (!section.classList.contains("is-reveal-in")) activate(section);
+            } else if (!entry.isIntersecting) {
+              deactivate(section);
+            }
+          });
+        },
+        { threshold: [0, 0.12, 0.2], rootMargin: "0px 0px -4% 0px" }
+      );
+      io.observe(section);
+    });
+
+    document.querySelectorAll("[data-lang]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        setTimeout(() => {
+          sections.forEach((section) => {
+            section.dataset.revealPrepared = "0";
+            section.querySelectorAll("[data-reveal-words]").forEach((el) => {
+              el.textContent = el.textContent;
+            });
+            prepare(section);
+            if (section.classList.contains("is-reveal-in") || reduceMotion) {
+              section.classList.add("is-reveal-in");
+            }
+          });
+        }, 50);
+      });
+    });
+
+    const galleryGrid = document.querySelector("[data-gallery-grid]");
+    if (galleryGrid) {
+      new MutationObserver(() => {
+        const section = galleryGrid.closest("[data-section-reveal]");
+        if (!section) return;
+        galleryGrid.querySelectorAll(".gallery-card:not(.reveal-item)").forEach((el, i) => {
+          el.classList.add("reveal-item");
+          el.setAttribute("data-reveal-item", "");
+          if (!el.style.getPropertyValue("--i")) el.style.setProperty("--i", String(i));
+        });
+        if (section.classList.contains("is-reveal-in")) {
+          galleryGrid.querySelectorAll(".reveal-item").forEach((el) => {
+            el.style.opacity = "1";
+            el.style.transform = "none";
+            el.style.filter = "none";
+          });
+        }
+      }).observe(galleryGrid, { childList: true });
+    }
+  })();
 })();
